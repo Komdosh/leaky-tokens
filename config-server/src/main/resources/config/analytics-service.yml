@@ -6,6 +6,14 @@ analytics:
   token-usage:
     topic: token-usage
     group: analytics-service
+  report:
+    default-window-minutes: 60
+    max-window-minutes: 1440
+    max-limit: 5000
+    max-baseline-windows: 24
+    max-top-users: 5
+    default-baseline-windows: 4
+    default-anomaly-threshold-multiplier: 2.0
 
 spring:
   security:

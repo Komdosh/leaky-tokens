@@ -20,6 +20,8 @@
 - Analytics Gatling simulation includes API key header.
 - Gateway rate limit tests expanded with route overrides + whitelist assertions.
 - Local profile parity: Eureka + local configs, local analytics security bypass, Cassandra local defaults.
+- Added feature flags and configuration validation for gateway + token-service.
+- Added analytics reporting + anomaly detection endpoints with configurable windows.
 
 ## Blocking / Known Issues
 - None currently.
@@ -53,6 +55,8 @@
 - Production readiness: performance tuning, container optimization, CI/CD pipeline
 
 ### Not Started / Minimal
+- Backup & recovery procedures
+
+### Completed (recently)
 - Feature flags + dynamic configuration validation
 - Advanced reporting/anomaly detection
-- Backup & recovery procedures

@@ -17,6 +17,7 @@ dependencies {
 
     // Web (Servlet)
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
 
     // Actuator + Prometheus
     implementation("org.springframework.boot:spring-boot-starter-actuator")
