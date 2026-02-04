@@ -36,11 +36,14 @@ public class TokenPurchaseSagaController {
         }
 
         try {
+            if (request.getOrgId() != null && !request.getOrgId().isBlank()) {
+                java.util.UUID.fromString(request.getOrgId());
+            }
             TokenTierProperties.TierConfig tier = tierResolver.resolveTier();
             TokenPurchaseResponse response = sagaService.start(request, tier);
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId", Instant.now()));
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId or orgId", Instant.now()));
         }
     }
 }

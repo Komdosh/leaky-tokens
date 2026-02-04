@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 public class TokenPurchaseRequest {
     private String userId;
+    private String orgId;
     private String provider;
     private long tokens;
 

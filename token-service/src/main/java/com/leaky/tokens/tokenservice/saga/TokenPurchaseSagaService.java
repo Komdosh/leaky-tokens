@@ -36,7 +36,10 @@ public class TokenPurchaseSagaService {
     @Transactional
     public TokenPurchaseResponse start(TokenPurchaseRequest request, TokenTierProperties.TierConfig tier) {
         UUID userId = UUID.fromString(request.getUserId());
-        TokenPurchaseSaga saga = new TokenPurchaseSaga(UUID.randomUUID(), userId,
+        UUID orgId = request.getOrgId() == null || request.getOrgId().isBlank()
+            ? null
+            : UUID.fromString(request.getOrgId());
+        TokenPurchaseSaga saga = new TokenPurchaseSaga(UUID.randomUUID(), userId, orgId,
             request.getProvider(), request.getTokens(), TokenPurchaseSagaStatus.STARTED);
         sagaRepository.save(saga);
         emitEvent(saga, "TOKEN_PURCHASE_STARTED");
@@ -53,7 +56,11 @@ public class TokenPurchaseSagaService {
             return new TokenPurchaseResponse(saga.getId(), saga.getStatus(), saga.getCreatedAt());
         }
 
-        quotaService.addTokens(userId, request.getProvider(), request.getTokens(), tier);
+        if (orgId == null) {
+            quotaService.addTokens(userId, request.getProvider(), request.getTokens(), tier);
+        } else {
+            quotaService.addOrgTokens(orgId, request.getProvider(), request.getTokens(), tier);
+        }
         saga.setStatus(TokenPurchaseSagaStatus.TOKENS_ALLOCATED);
         sagaRepository.save(saga);
         emitEvent(saga, "TOKEN_ALLOCATED");

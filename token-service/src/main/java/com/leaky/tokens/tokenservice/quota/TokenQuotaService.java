@@ -12,15 +12,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TokenQuotaService {
     private final TokenPoolRepository repository;
+    private final OrgTokenPoolRepository orgRepository;
     private final TokenQuotaProperties properties;
 
-    public TokenQuotaService(TokenPoolRepository repository, TokenQuotaProperties properties) {
+    public TokenQuotaService(TokenPoolRepository repository,
+                             OrgTokenPoolRepository orgRepository,
+                             TokenQuotaProperties properties) {
         this.repository = repository;
+        this.orgRepository = orgRepository;
         this.properties = properties;
     }
 
     public Optional<TokenPool> getQuota(UUID userId, String provider, TokenTierProperties.TierConfig tier) {
         Optional<TokenPool> pool = repository.findByUserIdAndProvider(userId, provider);
+        pool.ifPresent(existing -> applyResetIfNeeded(existing, tier, Instant.now()));
+        return pool;
+    }
+
+    public Optional<OrgTokenPool> getOrgQuota(UUID orgId, String provider, TokenTierProperties.TierConfig tier) {
+        Optional<OrgTokenPool> pool = orgRepository.findByOrgIdAndProvider(orgId, provider);
         pool.ifPresent(existing -> applyResetIfNeeded(existing, tier, Instant.now()));
         return pool;
     }
@@ -68,6 +78,49 @@ public class TokenQuotaService {
         return repository.save(pool);
     }
 
+    @Transactional
+    public TokenQuotaReservation reserveOrg(UUID orgId, String provider, long tokens, TokenTierProperties.TierConfig tier) {
+        OrgTokenPool pool = orgRepository.findForUpdate(orgId, provider).orElse(null);
+        if (pool == null) {
+            return new TokenQuotaReservation(false, 0, 0);
+        }
+        applyResetIfNeeded(pool, tier, Instant.now());
+        long effectiveRemaining = applyQuotaCap(pool, tier, Instant.now());
+        if (effectiveRemaining < tokens) {
+            return new TokenQuotaReservation(false, pool.getTotalTokens(), effectiveRemaining);
+        }
+        pool.reserveTokens(tokens, Instant.now());
+        orgRepository.save(pool);
+        return new TokenQuotaReservation(true, pool.getTotalTokens(), applyQuotaCap(pool, tier, Instant.now()));
+    }
+
+    @Transactional
+    public void releaseOrg(UUID orgId, String provider, long tokens, TokenTierProperties.TierConfig tier) {
+        OrgTokenPool pool = orgRepository.findForUpdate(orgId, provider).orElse(null);
+        if (pool == null) {
+            return;
+        }
+        applyResetIfNeeded(pool, tier, Instant.now());
+        pool.releaseTokens(tokens, Instant.now());
+        applyQuotaCap(pool, tier, Instant.now());
+        orgRepository.save(pool);
+    }
+
+    @Transactional
+    public OrgTokenPool addOrgTokens(UUID orgId, String provider, long tokens, TokenTierProperties.TierConfig tier) {
+        OrgTokenPool pool = orgRepository.findForUpdate(orgId, provider).orElse(null);
+        Instant now = Instant.now();
+        if (pool == null) {
+            pool = new OrgTokenPool(UUID.randomUUID(), orgId, provider, tokens, tokens, nextResetTime(now), now, now);
+        } else {
+            applyResetIfNeeded(pool, tier, now);
+            pool.addTokens(tokens, now);
+            ensureResetTime(pool, now);
+        }
+        applyQuotaCap(pool, tier, now);
+        return orgRepository.save(pool);
+    }
+
     private void applyResetIfNeeded(TokenPool pool, TokenTierProperties.TierConfig tier, Instant now) {
         if (!properties.isEnabled()) {
             return;
@@ -101,7 +154,51 @@ public class TokenQuotaService {
         return pool.getRemainingTokens();
     }
 
+    private void applyResetIfNeeded(OrgTokenPool pool, TokenTierProperties.TierConfig tier, Instant now) {
+        if (!properties.isEnabled()) {
+            return;
+        }
+        Duration window = properties.getWindow();
+        if (window == null || window.isZero() || window.isNegative()) {
+            return;
+        }
+        Instant resetTime = pool.getResetTime();
+        if (resetTime == null) {
+            pool.ensureResetTime(now, window);
+            orgRepository.save(pool);
+            return;
+        }
+        if (!resetTime.isAfter(now)) {
+            pool.resetWindow(now, window);
+            applyQuotaCap(pool, tier, now);
+            orgRepository.save(pool);
+        }
+    }
+
+    private long applyQuotaCap(OrgTokenPool pool, TokenTierProperties.TierConfig tier, Instant now) {
+        if (tier == null || tier.getQuotaMaxTokens() == null) {
+            return pool.getRemainingTokens();
+        }
+        long cap = tier.getQuotaMaxTokens();
+        if (cap <= 0) {
+            return pool.getRemainingTokens();
+        }
+        pool.capRemainingTokens(cap, now);
+        return pool.getRemainingTokens();
+    }
+
     private void ensureResetTime(TokenPool pool, Instant now) {
+        if (!properties.isEnabled()) {
+            return;
+        }
+        Duration window = properties.getWindow();
+        if (window == null || window.isZero() || window.isNegative()) {
+            return;
+        }
+        pool.ensureResetTime(now, window);
+    }
+
+    private void ensureResetTime(OrgTokenPool pool, Instant now) {
         if (!properties.isEnabled()) {
             return;
         }

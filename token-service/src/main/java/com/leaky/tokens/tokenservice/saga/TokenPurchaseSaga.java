@@ -24,6 +24,9 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "org_id")
+    private UUID orgId;
+
     @Column(nullable = false, length = 50)
     private String provider;
 
@@ -43,9 +46,10 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
     public TokenPurchaseSaga() {
     }
 
-    public TokenPurchaseSaga(UUID id, UUID userId, String provider, long tokens, TokenPurchaseSagaStatus status) {
+    public TokenPurchaseSaga(UUID id, UUID userId, UUID orgId, String provider, long tokens, TokenPurchaseSagaStatus status) {
         this.id = id;
         this.userId = userId;
+        this.orgId = orgId;
         this.provider = provider;
         this.tokens = tokens;
         this.status = status;
@@ -82,6 +86,14 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public UUID getOrgId() {
+        return orgId;
+    }
+
+    public void setOrgId(UUID orgId) {
+        this.orgId = orgId;
     }
 
     public String getProvider() {

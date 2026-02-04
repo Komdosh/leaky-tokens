@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
 import java.util.Map;
@@ -128,6 +129,44 @@ class TokenControllerTest {
             )
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void consumeUsesOrgQuotaWhenOrgIdProvided() throws Exception {
+        Instant now = Instant.parse("2026-02-03T10:00:00Z");
+        TokenBucketResult allowed = TokenBucketResult.allowed(1000, 100, 0L, now);
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        when(tierResolver.resolveTier()).thenReturn(tier);
+        when(quotaService.reserveOrg(
+            java.util.UUID.fromString("10000000-0000-0000-0000-000000000001"),
+            "openai",
+            5,
+            tier
+        )).thenReturn(new TokenQuotaReservation(true, 1000, 995));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(new StubTokenBucketService(allowed),
+                new StubProviderCallService(),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver)
+        ).addFilters(new RateLimitHeadersFilter(), new SecurityHeadersFilter()).build();
+
+        mockMvc.perform(
+                post("/api/v1/tokens/consume")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"orgId\":\"10000000-0000-0000-0000-000000000001\",\"provider\":\"openai\",\"tokens\":5}")
+            )
+            .andExpect(status().isOk());
+
+        verify(quotaService).reserveOrg(
+            java.util.UUID.fromString("10000000-0000-0000-0000-000000000001"),
+            "openai",
+            5,
+            tier
+        );
     }
 
     private static final class StubTokenBucketService extends TokenBucketService {

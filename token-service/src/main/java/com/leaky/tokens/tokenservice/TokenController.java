@@ -99,10 +99,51 @@ public class TokenController {
             });
     }
 
+    @GetMapping("/api/v1/tokens/quota/org")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> orgQuota(@RequestParam("orgId") String orgId,
+                                      @RequestParam("provider") String provider) {
+        if (orgId == null || orgId.isBlank()) {
+            metrics.quotaLookup("unknown", "invalid");
+            return ResponseEntity.badRequest().body(new ErrorResponse("orgId is required", Instant.now()));
+        }
+        if (provider == null || provider.isBlank()) {
+            metrics.quotaLookup("unknown", "invalid");
+            return ResponseEntity.badRequest().body(new ErrorResponse("provider is required", Instant.now()));
+        }
+
+        UUID orgUuid;
+        try {
+            orgUuid = UUID.fromString(orgId.trim());
+        } catch (IllegalArgumentException ex) {
+            metrics.quotaLookup(provider.trim(), "invalid");
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid orgId", Instant.now()));
+        }
+
+        TokenTierProperties.TierConfig tier = tierResolver.resolveTier();
+        return quotaService.getOrgQuota(orgUuid, provider.trim(), tier)
+            .<ResponseEntity<?>>map(pool -> {
+                metrics.quotaLookup(provider.trim(), "found");
+                return ResponseEntity.ok(Map.of(
+                    "orgId", pool.getOrgId(),
+                    "provider", pool.getProvider(),
+                    "totalTokens", pool.getTotalTokens(),
+                    "remainingTokens", pool.getRemainingTokens(),
+                    "updatedAt", pool.getUpdatedAt()
+                ));
+            })
+            .orElseGet(() -> {
+                metrics.quotaLookup(provider.trim(), "not_found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("quota not found", Instant.now()));
+            });
+    }
+
     @PostMapping("/api/v1/tokens/consume")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> consume(@RequestBody TokenConsumeRequest request, HttpServletRequest httpRequest) {
         String userId = request.getUserId();
+        String orgId = request.getOrgId();
         String provider = request.getProvider();
         long tokens = request.getTokens();
 
@@ -123,10 +164,24 @@ public class TokenController {
             metrics.consumeQuotaInsufficient(provider == null ? "unknown" : provider.trim());
             return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId", Instant.now()));
         }
+        UUID orgUuid = null;
+        if (orgId != null && !orgId.isBlank()) {
+            try {
+                orgUuid = UUID.fromString(orgId.trim());
+            } catch (IllegalArgumentException ex) {
+                metrics.consumeQuotaInsufficient(provider == null ? "unknown" : provider.trim());
+                return ResponseEntity.badRequest().body(new ErrorResponse("invalid orgId", Instant.now()));
+            }
+        }
 
         metrics.consumeAttempt(provider.trim());
         TokenTierProperties.TierConfig tier = tierResolver.resolveTier();
-        TokenQuotaReservation reservation = quotaService.reserve(userUuid, provider.trim(), tokens, tier);
+        TokenQuotaReservation reservation;
+        if (orgUuid == null) {
+            reservation = quotaService.reserve(userUuid, provider.trim(), tokens, tier);
+        } else {
+            reservation = quotaService.reserveOrg(orgUuid, provider.trim(), tokens, tier);
+        }
         if (!reservation.allowed()) {
             metrics.consumeQuotaInsufficient(provider.trim());
             return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
@@ -137,7 +192,11 @@ public class TokenController {
         httpRequest.setAttribute("tokenBucketResult", result);
 
         if (!result.isAllowed()) {
-            quotaService.release(userUuid, provider.trim(), tokens, tier);
+            if (orgUuid == null) {
+                quotaService.release(userUuid, provider.trim(), tokens, tier);
+            } else {
+                quotaService.releaseOrg(orgUuid, provider.trim(), tokens, tier);
+            }
             metrics.consumeRateLimited(provider.trim());
             TokenConsumeResponse response = new TokenConsumeResponse(
                 false,
@@ -155,7 +214,11 @@ public class TokenController {
         try {
             providerResponse = providerCallService.call(provider.trim(), new ProviderRequest(request.getPrompt()));
         } catch (ProviderCallException ex) {
-            quotaService.release(userUuid, provider.trim(), tokens, tier);
+            if (orgUuid == null) {
+                quotaService.release(userUuid, provider.trim(), tokens, tier);
+            } else {
+                quotaService.releaseOrg(orgUuid, provider.trim(), tokens, tier);
+            }
             metrics.consumeProviderFailure(provider.trim());
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new ErrorResponse("provider call failed", Instant.now()));

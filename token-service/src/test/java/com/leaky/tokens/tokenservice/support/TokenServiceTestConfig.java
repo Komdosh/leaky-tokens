@@ -1,7 +1,5 @@
 package com.leaky.tokens.tokenservice.support;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.leaky.tokens.tokenservice.bucket.InMemoryTokenBucketStore;
 import com.leaky.tokens.tokenservice.bucket.TokenBucketStore;
 import com.leaky.tokens.tokenservice.events.NoopTokenUsagePublisher;
@@ -13,13 +11,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.ObjectMapper;
 import javax.sql.DataSource;
 
 @Configuration
 public class TokenServiceTestConfig {
     @Bean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper().registerModule(new JavaTimeModule());
+        return new ObjectMapper();
     }
 
     @Bean
