@@ -44,6 +44,7 @@ import reactor.netty.http.server.HttpServerResponse;
 class GatewayRateLimitTest {
     private static DisposableServer mockTokenService;
     private static DisposableServer mockActuatorService;
+    private static DisposableServer mockAnalyticsService;
 
     private WebTestClient webTestClient;
 
@@ -68,6 +69,12 @@ class GatewayRateLimitTest {
                 .route(GatewayRateLimitTest::actuatorRoutes)
                 .bindNow();
         }
+        if (mockAnalyticsService == null) {
+            mockAnalyticsService = HttpServer.create()
+                .port(0)
+                .route(GatewayRateLimitTest::analyticsRoutes)
+                .bindNow();
+        }
     }
 
     @AfterAll
@@ -77,6 +84,9 @@ class GatewayRateLimitTest {
         }
         if (mockActuatorService != null) {
             mockActuatorService.disposeNow();
+        }
+        if (mockAnalyticsService != null) {
+            mockAnalyticsService.disposeNow();
         }
     }
 
@@ -128,6 +138,29 @@ class GatewayRateLimitTest {
             .expectStatus().isOk();
     }
 
+    @Test
+    void appliesDefaultLimitWhenRouteNotOverridden() {
+        webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+
+        EntityExchangeResult<String> first = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        EntityExchangeResult<String> second = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        assertThat(first.getStatus().value()).isEqualTo(200);
+        assertThat(second.getStatus().value()).isEqualTo(200);
+        assertThat(second.getResponseHeaders().getFirst("X-RateLimit-Limit")).isEqualTo("5");
+    }
+
     private static HttpServerRoutes tokenRoutes(HttpServerRoutes routes) {
         return routes.post("/api/v1/tokens/consume", (request, response) -> respondOk(response));
     }
@@ -137,6 +170,10 @@ class GatewayRateLimitTest {
             .header("Content-Type", "application/json")
             .sendString(Mono.just("{\"status\":\"UP\"}"))
             .then());
+    }
+
+    private static HttpServerRoutes analyticsRoutes(HttpServerRoutes routes) {
+        return routes.get("/api/v1/analytics/usage", (request, response) -> respondOk(response));
     }
 
     private static Mono<Void> respondOk(HttpServerResponse response) {
@@ -157,6 +194,9 @@ class GatewayRateLimitTest {
                 .route("actuator-service", route -> route
                     .path("/actuator/**")
                     .uri("http://localhost:" + mockActuatorService.port()))
+                .route("analytics-service", route -> route
+                    .path("/api/v1/analytics/**")
+                    .uri("http://localhost:" + mockAnalyticsService.port()))
                 .build();
         }
 
