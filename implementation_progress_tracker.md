@@ -46,6 +46,8 @@
 - Enabled readiness probes across core services and provider stubs.
 - Fixed security headers filter to avoid premature response close.
 - Added Caffeine cache for Spring Cloud LoadBalancer.
+- Added idempotency support for token purchase saga.
+- Hardened saga against quota allocation failures with compensation.
 
 ---
 
@@ -219,6 +221,7 @@
 3. Add performance baseline reports (saved artifacts)
 4. Clean up remaining warnings (unchecked ops in provider client)
 5. Add contract tests for gateway-to-service APIs
+6. Add saga recovery job for stuck/in-progress sagas
 
 ---
 
