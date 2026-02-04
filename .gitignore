@@ -37,4 +37,7 @@ node_modules/
 # Temp
 tmp/
 **/tmp/
+
+# Manually excluded
 lib/
+performance-reports

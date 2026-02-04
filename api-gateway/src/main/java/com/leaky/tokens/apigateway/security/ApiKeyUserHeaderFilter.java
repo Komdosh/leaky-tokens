@@ -41,8 +41,15 @@ public class ApiKeyUserHeaderFilter implements WebFilter {
         if (userId.isBlank()) {
             return exchange;
         }
+        String roles = String.join(",", token.getRoles());
         ServerHttpRequest mutated = exchange.getRequest().mutate()
             .header(properties.getUserHeaderName(), userId)
+            .headers(headers -> {
+                if (!roles.isBlank()) {
+                    headers.set(properties.getRolesHeaderName(), roles);
+                }
+                headers.remove(properties.getHeaderName());
+            })
             .build();
         return exchange.mutate().request(mutated).build();
     }

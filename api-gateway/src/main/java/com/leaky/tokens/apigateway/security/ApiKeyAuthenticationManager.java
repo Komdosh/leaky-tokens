@@ -1,6 +1,7 @@
 package com.leaky.tokens.apigateway.security;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,7 +40,7 @@ public class ApiKeyAuthenticationManager implements ReactiveAuthenticationManage
         if (cached.isPresent()) {
             metrics.apiKeyCache("hit");
             metrics.apiKeyValidation("success");
-            return Mono.just(new ApiKeyAuthenticationToken(apiKey, cached.get().getUserId()));
+            return Mono.just(new ApiKeyAuthenticationToken(apiKey, cached.get().getUserId(), cached.get().getRoles()));
         }
         metrics.apiKeyCache("miss");
         return webClient.get()
@@ -61,10 +62,21 @@ public class ApiKeyAuthenticationManager implements ReactiveAuthenticationManage
                     } catch (Exception ignored) {
                     }
                 }
-                cache.put(apiKey, new ApiKeyValidationCache.CacheEntry(userId, expiresAt, Instant.now()),
+                List<String> roles = extractRoles(body.get("roles"));
+                cache.put(apiKey, new ApiKeyValidationCache.CacheEntry(userId, expiresAt, roles, Instant.now()),
                     properties.getCacheMaxSize());
                 metrics.apiKeyValidation("success");
-                return new ApiKeyAuthenticationToken(apiKey, userId);
+                return new ApiKeyAuthenticationToken(apiKey, userId, roles);
             });
+    }
+
+    private List<String> extractRoles(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream()
+                .map(String::valueOf)
+                .filter(role -> !role.isBlank())
+                .toList();
+        }
+        return List.of();
     }
 }

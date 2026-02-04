@@ -35,11 +35,13 @@ public class ApiKeyValidationCache {
     public static final class CacheEntry {
         private final String userId;
         private final Instant expiresAt;
+        private final java.util.List<String> roles;
         private final Instant cachedAt;
 
-        public CacheEntry(String userId, Instant expiresAt, Instant cachedAt) {
+        public CacheEntry(String userId, Instant expiresAt, java.util.List<String> roles, Instant cachedAt) {
             this.userId = userId;
             this.expiresAt = expiresAt;
+            this.roles = roles == null ? java.util.List.of() : java.util.List.copyOf(roles);
             this.cachedAt = cachedAt;
         }
 
@@ -49,6 +51,10 @@ public class ApiKeyValidationCache {
 
         public Instant getExpiresAt() {
             return expiresAt;
+        }
+
+        public java.util.List<String> getRoles() {
+            return roles;
         }
 
         public Instant getCachedAt() {

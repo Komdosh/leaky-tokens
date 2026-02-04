@@ -82,6 +82,8 @@ services:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":service-discovery:bootRun"]
+    environment:
+      - GRADLE_USER_HOME=/root/.gradle/service-discovery
     ports:
       - "8761:8761"
 
@@ -93,6 +95,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":config-server:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/config-server
       - SPRING_PROFILES_ACTIVE=native
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -108,6 +111,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":api-gateway:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/api-gateway
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
@@ -125,10 +129,13 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":auth-server:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/auth-server
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
     depends_on:
@@ -147,10 +154,13 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":token-service:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/token-service
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/token_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -171,6 +181,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":analytics-service:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/analytics-service
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
@@ -193,6 +204,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":qwen-stub:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/qwen-stub
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
@@ -210,6 +222,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":gemini-stub:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/gemini-stub
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
@@ -227,6 +240,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":openai-stub:bootRun"]
     environment:
+      - GRADLE_USER_HOME=/root/.gradle/openai-stub
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka

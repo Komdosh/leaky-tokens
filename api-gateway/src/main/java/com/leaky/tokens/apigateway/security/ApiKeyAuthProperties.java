@@ -8,6 +8,7 @@ public class ApiKeyAuthProperties {
     private String headerName = "X-Api-Key";
     private String authServerUrl = "http://localhost:8081";
     private String userHeaderName = "X-User-Id";
+    private String rolesHeaderName = "X-User-Roles";
     private long cacheTtlSeconds = 120;
     private long cacheMaxSize = 10000;
 
@@ -41,6 +42,14 @@ public class ApiKeyAuthProperties {
 
     public void setUserHeaderName(String userHeaderName) {
         this.userHeaderName = userHeaderName;
+    }
+
+    public String getRolesHeaderName() {
+        return rolesHeaderName;
+    }
+
+    public void setRolesHeaderName(String rolesHeaderName) {
+        this.rolesHeaderName = rolesHeaderName;
     }
 
     public long getCacheTtlSeconds() {

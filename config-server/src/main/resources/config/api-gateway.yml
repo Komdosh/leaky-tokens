@@ -120,6 +120,7 @@ gateway:
     header-name: X-Api-Key
     auth-server-url: http://localhost:8081
     user-header-name: X-User-Id
+    roles-header-name: X-User-Roles
     cache-ttl-seconds: 120
     cache-max-size: 10000
 
