@@ -87,6 +87,27 @@ The Leaky Tokens project follows a microservices architecture pattern with the f
   - Manages token pools for different API providers
   - Tracks token consumption
   - Enforces rate limiting
+  - Applies tier-based quotas (USER/ADMIN) and org-level shared quotas
+
+#### Tiered & Org Quotas
+Tier selection is derived from JWT roles and mapped to `token.tiers`.
+If an `orgId` is supplied, org-level quotas are used instead of per-user quotas.
+
+Example requests:
+
+```
+POST /api/v1/tokens/consume
+{
+  "userId": "00000000-0000-0000-0000-000000000001",
+  "orgId": "10000000-0000-0000-0000-000000000001",
+  "provider": "openai",
+  "tokens": 25
+}
+```
+
+```
+GET /api/v1/tokens/quota/org?orgId=10000000-0000-0000-0000-000000000001&provider=openai
+```
 
 ### 6. Analytics Service
 - **Technology**: Spring Boot + Kafka

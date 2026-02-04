@@ -108,6 +108,7 @@
 - **Organization-Level Limits**: Shared quotas for organizations
 - **Time-Based Windows**: Hourly, daily, monthly quota management
 - **Priority Tiers**: Different rate limits based on subscription tier
+- **Tier Mapping via Roles**: Map JWT roles (e.g., USER/ADMIN) to tier configs
 
 ### 17. Analytics & Reporting
 - **Usage Analytics**: Track token consumption patterns
