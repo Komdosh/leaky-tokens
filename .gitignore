@@ -1,0 +1,40 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ / IDEA
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Env files
+.env
+.env.*
+
+# Test reports
+**/build/reports/
+
+# Node / frontend (if added later)
+node_modules/
+
+# Docker
+**/docker-compose.override.yml
+
+# Temp
+tmp/
+**/tmp/
+lib/

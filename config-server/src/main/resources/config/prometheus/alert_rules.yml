@@ -1,0 +1,128 @@
+groups:
+  - name: leaky-tokens-business
+    rules:
+      - alert: HighAuthLoginFailureRate
+        expr: |
+          (sum(increase(auth_login_total{outcome="failure"}[5m])) /
+          clamp_min(sum(increase(auth_login_total[5m])), 1)) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High auth login failure rate"
+          description: "More than 20% of auth logins failed over the last 5 minutes."
+
+      - alert: TokenProviderFailures
+        expr: sum(increase(token_consume_total{outcome="provider_failure"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Provider call failures"
+          description: "Token provider failures exceeded 5 in the last 5 minutes."
+
+      - alert: TokenRateLimited
+        expr: sum(increase(token_consume_total{outcome="rate_limited"}[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Token rate limiting high"
+          description: "More than 10 token consume requests were rate limited in 5 minutes."
+
+      - alert: ApiKeyValidationFailures
+        expr: sum(increase(gateway_api_key_validation_total{outcome="failure"}[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API key validation failures"
+          description: "Gateway API key validation failures exceeded 5 in the last 5 minutes."
+
+      - alert: GatewayRateLimitBlocked
+        expr: sum(increase(gateway_rate_limit_total{outcome="blocked"}[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gateway rate limiting high"
+          description: "More than 20 requests were blocked by gateway rate limit in 5 minutes."
+
+  - name: leaky-tokens-performance
+    rules:
+      - alert: HighGatewayLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_server_requests_seconds_bucket{application="api-gateway"}[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High gateway latency (p95)"
+          description: "API gateway p95 latency is above 1s for 5 minutes."
+
+      - alert: HighTokenServiceLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_server_requests_seconds_bucket{application="token-service"}[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High token service latency (p95)"
+          description: "Token service p95 latency is above 1s for 5 minutes."
+
+      - alert: HighGatewayErrorRate
+        expr: |
+          (sum(rate(http_server_requests_seconds_count{application="api-gateway",status=~"5.."}[5m])) /
+          clamp_min(sum(rate(http_server_requests_seconds_count{application="api-gateway"}[5m])), 1)) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High gateway error rate"
+          description: "API gateway 5xx rate is above 2% for 5 minutes."
+
+      - alert: HighTokenServiceErrorRate
+        expr: |
+          (sum(rate(http_server_requests_seconds_count{application="token-service",status=~"5.."}[5m])) /
+          clamp_min(sum(rate(http_server_requests_seconds_count{application="token-service"}[5m])), 1)) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High token service error rate"
+          description: "Token service 5xx rate is above 2% for 5 minutes."
+
+      - alert: HighGatewayFallbackRate
+        expr: |
+          (sum(rate(http_server_requests_seconds_count{application="api-gateway",uri="/fallback/{service}"}[5m])) /
+          clamp_min(sum(rate(http_server_requests_seconds_count{application="api-gateway"}[5m])), 1)) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High gateway fallback rate"
+          description: "More than 5% of gateway traffic is hitting circuit breaker fallbacks."
+
+      - alert: AuthLoginFailuresSpike
+        expr: sum(increase(auth_login_total{outcome="failure"}[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth login failures spike"
+          description: "More than 20 login failures in 5 minutes."
+
+      - alert: TokenQuotaInsufficientSpike
+        expr: sum(increase(token_consume_total{outcome="quota_insufficient"}[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Quota insufficient spike"
+          description: "More than 20 token consume requests failed due to insufficient quota in 5 minutes."

@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  service-discovery:
+    image: eclipse-temurin:25-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", ":service-discovery:bootRun"]
+    ports:
+      - "8761:8761"
+
+  config-server:
+    image: eclipse-temurin:25-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", ":config-server:bootRun"]
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+    depends_on:
+      - service-discovery
+    ports:
+      - "8888:8888"
+
+  api-gateway:
+    image: eclipse-temurin:25-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", ":api-gateway:bootRun"]
+    environment:
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+    depends_on:
+      - service-discovery
+      - config-server
+    ports:
+      - "8080:8080"
+
+  auth-server:
+    image: eclipse-temurin:25-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", ":auth-server:bootRun"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+    depends_on:
+      - service-discovery
+      - config-server
+    ports:
+      - "8081:8081"
+
+  token-service:
+    image: eclipse-temurin:25-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", ":token-service:bootRun"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+    depends_on:
+      - service-discovery
+      - config-server
+    ports:
+      - "8082:8082"
+
+  analytics-service:
+    image: eclipse-temurin:25-jdk
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", ":analytics-service:bootRun"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+    depends_on:
+      - service-discovery
+      - config-server
+    ports:
+      - "8083:8083"
+
+volumes:
+  gradle-cache:

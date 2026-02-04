@@ -1,0 +1,61 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8080']
+
+  - job_name: 'auth-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-server:8081']
+
+  - job_name: 'token-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['token-service:8082']
+
+  - job_name: 'analytics-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['analytics-service:8083']
+
+  - job_name: 'config-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['config-server:8888']
+
+  - job_name: 'service-discovery'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['service-discovery:8761']
+
+  - job_name: 'qwen-stub'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['qwen-stub:8091']
+
+  - job_name: 'gemini-stub'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gemini-stub:8092']
+
+  - job_name: 'openai-stub'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['openai-stub:8093']

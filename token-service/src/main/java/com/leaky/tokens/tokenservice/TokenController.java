@@ -1,0 +1,170 @@
+package com.leaky.tokens.tokenservice;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import com.leaky.tokens.tokenservice.bucket.TokenBucketResult;
+import com.leaky.tokens.tokenservice.bucket.TokenBucketService;
+import com.leaky.tokens.tokenservice.dto.ErrorResponse;
+import com.leaky.tokens.tokenservice.dto.TokenConsumeRequest;
+import com.leaky.tokens.tokenservice.dto.TokenConsumeResponse;
+import com.leaky.tokens.tokenservice.metrics.TokenServiceMetrics;
+import com.leaky.tokens.tokenservice.provider.ProviderCallException;
+import com.leaky.tokens.tokenservice.provider.ProviderCallService;
+import com.leaky.tokens.tokenservice.provider.ProviderRequest;
+import com.leaky.tokens.tokenservice.provider.ProviderResponse;
+import com.leaky.tokens.tokenservice.quota.TokenQuotaReservation;
+import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@RestController
+public class TokenController {
+    private final TokenBucketService tokenBucketService;
+    private final ProviderCallService providerCallService;
+    private final TokenQuotaService quotaService;
+    private final TokenServiceMetrics metrics;
+
+    public TokenController(TokenBucketService tokenBucketService,
+                           ProviderCallService providerCallService,
+                           TokenQuotaService quotaService,
+                           TokenServiceMetrics metrics) {
+        this.tokenBucketService = tokenBucketService;
+        this.providerCallService = providerCallService;
+        this.quotaService = quotaService;
+        this.metrics = metrics;
+    }
+
+    @GetMapping("/api/v1/tokens/status")
+    public Map<String, Object> status() {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("service", "token-service");
+        response.put("status", "ok");
+        response.put("timestamp", Instant.now().toString());
+        return response;
+    }
+
+    @GetMapping("/api/v1/tokens/quota")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> quota(@RequestParam("userId") String userId,
+                                   @RequestParam("provider") String provider) {
+        if (userId == null || userId.isBlank()) {
+            metrics.quotaLookup("unknown", "invalid");
+            return ResponseEntity.badRequest().body(new ErrorResponse("userId is required", Instant.now()));
+        }
+        if (provider == null || provider.isBlank()) {
+            metrics.quotaLookup("unknown", "invalid");
+            return ResponseEntity.badRequest().body(new ErrorResponse("provider is required", Instant.now()));
+        }
+
+        UUID userUuid;
+        try {
+            userUuid = UUID.fromString(userId.trim());
+        } catch (IllegalArgumentException ex) {
+            metrics.quotaLookup(provider.trim(), "invalid");
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId", Instant.now()));
+        }
+
+        return quotaService.getQuota(userUuid, provider.trim())
+            .<ResponseEntity<?>>map(pool -> {
+                metrics.quotaLookup(provider.trim(), "found");
+                return ResponseEntity.ok(Map.of(
+                    "userId", pool.getUserId(),
+                    "provider", pool.getProvider(),
+                    "totalTokens", pool.getTotalTokens(),
+                    "remainingTokens", pool.getRemainingTokens(),
+                    "updatedAt", pool.getUpdatedAt()
+                ));
+            })
+            .orElseGet(() -> {
+                metrics.quotaLookup(provider.trim(), "not_found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("quota not found", Instant.now()));
+            });
+    }
+
+    @PostMapping("/api/v1/tokens/consume")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> consume(@RequestBody TokenConsumeRequest request, HttpServletRequest httpRequest) {
+        String userId = request.getUserId();
+        String provider = request.getProvider();
+        long tokens = request.getTokens();
+
+        if (userId == null || userId.isBlank()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("userId is required", Instant.now()));
+        }
+        if (provider == null || provider.isBlank()) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("provider is required", Instant.now()));
+        }
+        if (tokens <= 0) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("tokens must be positive", Instant.now()));
+        }
+
+        UUID userUuid;
+        try {
+            userUuid = UUID.fromString(userId.trim());
+        } catch (IllegalArgumentException ex) {
+            metrics.consumeQuotaInsufficient(provider == null ? "unknown" : provider.trim());
+            return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId", Instant.now()));
+        }
+
+        metrics.consumeAttempt(provider.trim());
+        TokenQuotaReservation reservation = quotaService.reserve(userUuid, provider.trim(), tokens);
+        if (!reservation.allowed()) {
+            metrics.consumeQuotaInsufficient(provider.trim());
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(new ErrorResponse("insufficient token quota", Instant.now()));
+        }
+
+        TokenBucketResult result = tokenBucketService.consume(userId.trim(), provider.trim(), tokens);
+        httpRequest.setAttribute("tokenBucketResult", result);
+
+        if (!result.isAllowed()) {
+            quotaService.release(userUuid, provider.trim(), tokens);
+            metrics.consumeRateLimited(provider.trim());
+            TokenConsumeResponse response = new TokenConsumeResponse(
+                false,
+                result.getCapacity(),
+                result.getUsed(),
+                result.getRemaining(),
+                result.getWaitSeconds(),
+                result.getTimestamp(),
+                Map.of()
+            );
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+        }
+
+        ProviderResponse providerResponse;
+        try {
+            providerResponse = providerCallService.call(provider.trim(), new ProviderRequest(request.getPrompt()));
+        } catch (ProviderCallException ex) {
+            quotaService.release(userUuid, provider.trim(), tokens);
+            metrics.consumeProviderFailure(provider.trim());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse("provider call failed", Instant.now()));
+        }
+
+        metrics.consumeAllowed(provider.trim());
+        TokenConsumeResponse response = new TokenConsumeResponse(
+            true,
+            result.getCapacity(),
+            result.getUsed(),
+            result.getRemaining(),
+            result.getWaitSeconds(),
+            result.getTimestamp(),
+            providerResponse.getData()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+}

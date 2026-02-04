@@ -1,0 +1,13 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  cassandra:
+    contact-points: cassandra
+    keyspace-name: analytics_keyspace
+    schema-action: CREATE_IF_NOT_EXISTS
+
+analytics:
+  token-usage:
+    topic: token-usage
+    group: analytics-service

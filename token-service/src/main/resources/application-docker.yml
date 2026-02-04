@@ -1,0 +1,15 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+# Persist buckets and publish events when running in Docker.
+token:
+  bucket:
+    store: redis
+  usage:
+    topic: token-usage

@@ -1,0 +1,15 @@
+info:
+  app:
+    name: analytics-service
+
+analytics:
+  token-usage:
+    topic: token-usage
+    group: analytics-service
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8081/oauth2/jwks

@@ -1,0 +1,86 @@
+plugins {
+    id("io.gatling.gradle") version "3.11.5"
+    scala
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Gradle 9 removed project.reportsDir; Gatling plugin still queries it.
+extra["reportsDir"] = layout.buildDirectory.dir("reports").get().asFile
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+dependencies {
+    gatlingImplementation("io.gatling:gatling-core")
+    gatlingImplementation("io.gatling:gatling-http")
+}
+
+tasks.withType<org.gradle.api.tasks.scala.ScalaCompile>().configureEach {
+    scalaCompileOptions.additionalParameters = listOf("-target:jvm-17")
+}
+
+gatling {
+    jvmArgs = listOf("-Xms512m", "-Xmx1024m")
+}
+
+val gatlingReportDir = layout.buildDirectory.dir("reports/gatling")
+val gatlingJvmArgs = listOf("-Xms512m", "-Xmx1024m")
+val gatlingSystemProperties = System.getProperties().entries.associate { (key, value) ->
+    key.toString() to value
+}
+val gatlingJavaLauncher = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(25))
+}
+
+fun registerGatlingRunTask(taskName: String, simulationClass: String) =
+    tasks.register<JavaExec>(taskName) {
+        group = "gatling"
+        description = "Run Gatling simulation $simulationClass"
+        dependsOn("gatlingClasses")
+        classpath = configurations["gatlingRuntimeClasspath"]
+        mainClass.set("io.gatling.app.Gatling")
+        javaLauncher.set(gatlingJavaLauncher)
+        jvmArgs = gatlingJvmArgs
+        args(
+            "-s", simulationClass,
+            "-rf", gatlingReportDir.get().asFile.absolutePath
+        )
+        systemProperties(gatlingSystemProperties)
+    }
+
+val runAnalytics = registerGatlingRunTask(
+    "runGatlingAnalytics",
+    "com.leaky.tokens.perf.AnalyticsQuerySimulation"
+)
+val runAuth = registerGatlingRunTask(
+    "runGatlingAuth",
+    "com.leaky.tokens.perf.AuthLoginSimulation"
+)
+val runConsume = registerGatlingRunTask(
+    "runGatlingConsume",
+    "com.leaky.tokens.perf.TokenConsumeSimulation"
+)
+val runPurchase = registerGatlingRunTask(
+    "runGatlingPurchaseSaga",
+    "com.leaky.tokens.perf.TokenPurchaseSagaSimulation"
+)
+val runQuota = registerGatlingRunTask(
+    "runGatlingQuota",
+    "com.leaky.tokens.perf.TokenQuotaCheckSimulation"
+)
+val runUsage = registerGatlingRunTask(
+    "runGatlingUsage",
+    "com.leaky.tokens.perf.TokenUsagePublishSimulation"
+)
+
+tasks.register("runGatlingAll") {
+    group = "gatling"
+    description = "Run all Gatling simulations sequentially"
+    dependsOn(runAnalytics, runAuth, runConsume, runPurchase, runQuota, runUsage)
+}

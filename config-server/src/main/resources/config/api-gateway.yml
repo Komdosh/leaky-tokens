@@ -1,0 +1,150 @@
+info:
+  app:
+    name: api-gateway
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: token-service
+          uri: lb://token-service
+          predicates:
+            - Path=/api/v1/tokens/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: tokenServiceCB
+                fallbackUri: forward:/fallback/token-service
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: auth-server
+          uri: lb://auth-server
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authServerCB
+                fallbackUri: forward:/fallback/auth-server
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: analytics-service
+          uri: lb://analytics-service
+          predicates:
+            - Path=/api/v1/analytics/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: analyticsServiceCB
+                fallbackUri: forward:/fallback/analytics-service
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: qwen-stub
+          uri: lb://qwen-stub
+          predicates:
+            - Path=/api/v1/qwen/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: qwenStubCB
+                fallbackUri: forward:/fallback/qwen-stub
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: gemini-stub
+          uri: lb://gemini-stub
+          predicates:
+            - Path=/api/v1/gemini/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: geminiStubCB
+                fallbackUri: forward:/fallback/gemini-stub
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: openai-stub
+          uri: lb://openai-stub
+          predicates:
+            - Path=/api/v1/openai/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: openaiStubCB
+                fallbackUri: forward:/fallback/openai-stub
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8081/oauth2/jwks
+
+gateway:
+  rate-limit:
+    enabled: true
+    capacity: 120
+    window-seconds: 60
+    key-strategy: IP
+    header-name: X-Api-Key
+    user-header-name: X-User-Id
+  api-key:
+    enabled: true
+    header-name: X-Api-Key
+    auth-server-url: http://localhost:8081
+    user-header-name: X-User-Id
+    cache-ttl-seconds: 120
+    cache-max-size: 10000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      tokenServiceCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      authServerCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      analyticsServiceCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      qwenStubCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      geminiStubCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      openaiStubCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s

@@ -1,0 +1,12 @@
+server:
+  port: 8093
+
+spring:
+  application:
+    name: openai-stub
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/analytics-service/leaky-tokens.analytics-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/analytics-service/leaky-tokens.analytics-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/api-gateway/leaky-tokens.api-gateway.main.iml" filepath="$PROJECT_DIR$/.idea/modules/api-gateway/leaky-tokens.api-gateway.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/auth-server/leaky-tokens.auth-server.main.iml" filepath="$PROJECT_DIR$/.idea/modules/auth-server/leaky-tokens.auth-server.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/config-server/leaky-tokens.config-server.main.iml" filepath="$PROJECT_DIR$/.idea/modules/config-server/leaky-tokens.config-server.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/gemini-stub/leaky-tokens.gemini-stub.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gemini-stub/leaky-tokens.gemini-stub.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/openai-stub/leaky-tokens.openai-stub.main.iml" filepath="$PROJECT_DIR$/.idea/modules/openai-stub/leaky-tokens.openai-stub.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/qwen-stub/leaky-tokens.qwen-stub.main.iml" filepath="$PROJECT_DIR$/.idea/modules/qwen-stub/leaky-tokens.qwen-stub.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/service-discovery/leaky-tokens.service-discovery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/service-discovery/leaky-tokens.service-discovery.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/token-service/leaky-tokens.token-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/token-service/leaky-tokens.token-service.main.iml" />
+    </modules>
+  </component>
+</project>

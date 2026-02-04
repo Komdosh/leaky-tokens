@@ -1,0 +1,57 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-server:8081/oauth2/jwks
+
+  flyway:
+    enabled: true
+
+token:
+  bucket:
+    store: redis
+
+providers:
+  qwen:
+    base-url: http://qwen-stub:8091
+  gemini:
+    base-url: http://gemini-stub:8092
+  openai:
+    base-url: http://openai-stub:8093
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      providerCalls:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  retry:
+    instances:
+      providerCalls:
+        maxAttempts: 3
+        waitDuration: 250ms
+        retryExceptions:
+          - java.io.IOException
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - org.springframework.web.reactive.function.client.WebClientResponseException
+  bulkhead:
+    instances:
+      providerCalls:
+        maxConcurrentCalls: 20
+        maxWaitDuration: 0
+  timelimiter:
+    instances:
+      providerCalls:
+        timeoutDuration: 2s
+        cancelRunningFuture: true
