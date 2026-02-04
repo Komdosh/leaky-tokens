@@ -1,0 +1,152 @@
+package com.leaky.tokens.tokenservice.quota;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+
+import com.leaky.tokens.tokenservice.flags.TokenServiceFeatureFlags;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+
+class TokenQuotaServiceTest {
+    @Test
+    void reserveReturnsAllowedWhenFeatureDisabled() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        TokenQuotaProperties properties = new TokenQuotaProperties();
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setQuotaEnforcement(false);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, properties, flags);
+        TokenQuotaReservation reservation = service.reserve(UUID.randomUUID(), "openai", 50, null);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.remaining()).isEqualTo(Long.MAX_VALUE);
+    }
+
+    @Test
+    void reserveRejectsWhenPoolMissing() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        when(repository.findForUpdate(any(), any())).thenReturn(Optional.empty());
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenQuotaReservation reservation = service.reserve(UUID.randomUUID(), "openai", 50, null);
+
+        assertThat(reservation.allowed()).isFalse();
+        assertThat(reservation.total()).isEqualTo(0);
+        assertThat(reservation.remaining()).isEqualTo(0);
+    }
+
+    @Test
+    void reserveAppliesQuotaCapAndPersists() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            500,
+            500,
+            Instant.now().plus(Duration.ofHours(1)),
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findForUpdate(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setQuotaMaxTokens(100L);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenQuotaReservation reservation = service.reserve(userId, "openai", 50, tier);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.remaining()).isEqualTo(50);
+
+        ArgumentCaptor<TokenPool> captor = ArgumentCaptor.forClass(TokenPool.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getRemainingTokens()).isEqualTo(50);
+    }
+
+    @Test
+    void reserveResetsExpiredWindow() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        Instant past = Instant.now().minus(Duration.ofHours(2));
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            1000,
+            100,
+            past,
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findForUpdate(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenQuotaReservation reservation = service.reserve(userId, "openai", 100, null);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.remaining()).isEqualTo(900);
+    }
+
+    @Test
+    void addTokensCreatesPoolWithResetTime() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        when(repository.findForUpdate(any(), any())).thenReturn(Optional.empty());
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenPool pool = service.addTokens(UUID.randomUUID(), "openai", 200, null);
+
+        assertThat(pool.getTotalTokens()).isEqualTo(200);
+        assertThat(pool.getRemainingTokens()).isEqualTo(200);
+        assertThat(pool.getResetTime()).isNotNull();
+        assertThat(Duration.between(pool.getCreatedAt(), pool.getResetTime()).toHours()).isEqualTo(24);
+    }
+
+    @Test
+    void reserveOrgHonorsFeatureFlags() {
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setQuotaEnforcement(false);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), flags);
+        TokenQuotaReservation reservation = service.reserveOrg(UUID.randomUUID(), "openai", 10, null);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.remaining()).isEqualTo(Long.MAX_VALUE);
+    }
+
+    private TokenQuotaProperties quotaProps() {
+        TokenQuotaProperties properties = new TokenQuotaProperties();
+        properties.setEnabled(true);
+        properties.setWindow(Duration.ofHours(24));
+        return properties;
+    }
+
+    private TokenServiceFeatureFlags featureFlags() {
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setQuotaEnforcement(true);
+        return flags;
+    }
+}

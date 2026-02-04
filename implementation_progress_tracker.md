@@ -25,6 +25,7 @@
 - Added backup & recovery procedures for Postgres/Cassandra/Redis.
 - Polished OpenAPI schemas, examples, and Swagger UI configs across services.
 - Added unit tests for analytics reporting, JWT config/service, and tier resolution.
+- Added quota service unit tests (caps, resets, org behavior).
 
 ## Blocking / Known Issues
 - None currently.
