@@ -27,6 +27,7 @@
 - Added unit tests for analytics reporting, JWT config/service, and tier resolution.
 - Added quota service unit tests (caps, resets, org behavior).
 - Added controller tests for auth, token, and analytics APIs.
+- Added gateway cache and rate limit edge-case tests.
 
 ## Blocking / Known Issues
 - None currently.

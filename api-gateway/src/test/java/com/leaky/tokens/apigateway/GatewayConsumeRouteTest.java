@@ -39,7 +39,8 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
         "gateway.rate-limit.enabled=false",
         "gateway.api-key.enabled=true",
         "gateway.security.permit-all=true",
-        "gateway.api-key.cache-ttl-seconds=1"
+        "gateway.api-key.cache-ttl-seconds=1",
+        "spring.main.allow-bean-definition-overriding=true"
     }
 )
 class GatewayConsumeRouteTest {
@@ -261,6 +262,25 @@ class GatewayConsumeRouteTest {
     }
 
     @Test
+    void deniesWhenAuthServiceUnavailable() {
+        webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+
+        EntityExchangeResult<String> result = webTestClient.post()
+            .uri("/api/v1/tokens/consume")
+            .contentType(APPLICATION_JSON)
+            .header("X-Api-Key", "drop-auth")
+            .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        assertThat(result.getStatus().value()).isEqualTo(401);
+        assertThat(authCallCount.get()).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
     void returnsFallbackWhenCircuitBreakerTrips() {
         webTestClient = WebTestClient.bindToServer()
             .baseUrl("http://localhost:" + port)
@@ -360,9 +380,8 @@ class GatewayConsumeRouteTest {
     private static HttpServerRoutes authRoutes(HttpServerRoutes routes) {
         return routes.get("/api/v1/auth/api-keys/validate", (request, response) -> {
             String apiKey = request.requestHeaders().get("X-Api-Key");
-            String dropHeader = request.requestHeaders().get("X-Drop-Auth");
             authCallCount.incrementAndGet();
-            if ("true".equalsIgnoreCase(dropHeader)) {
+            if ("drop-auth".equals(apiKey)) {
                 return response.status(503).send();
             }
             if (invalidateNextAuth.getAndSet(false)) {

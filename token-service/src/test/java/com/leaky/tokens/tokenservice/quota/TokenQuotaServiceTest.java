@@ -137,6 +137,35 @@ class TokenQuotaServiceTest {
         assertThat(reservation.remaining()).isEqualTo(Long.MAX_VALUE);
     }
 
+    @Test
+    void reserveOrgAppliesQuotaCapAndPersists() {
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+
+        UUID orgId = UUID.randomUUID();
+        OrgTokenPool pool = new OrgTokenPool(
+            UUID.randomUUID(),
+            orgId,
+            "openai",
+            500,
+            500,
+            Instant.now().plus(Duration.ofHours(1)),
+            Instant.now(),
+            Instant.now()
+        );
+        when(orgRepository.findForUpdate(eq(orgId), eq("openai"))).thenReturn(Optional.of(pool));
+        when(orgRepository.save(any(OrgTokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setQuotaMaxTokens(200L);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenQuotaReservation reservation = service.reserveOrg(orgId, "openai", 50, tier);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.remaining()).isEqualTo(150);
+    }
+
     private TokenQuotaProperties quotaProps() {
         TokenQuotaProperties properties = new TokenQuotaProperties();
         properties.setEnabled(true);

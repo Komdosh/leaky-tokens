@@ -40,13 +40,15 @@ import reactor.netty.http.server.HttpServerResponse;
         "gateway.rate-limit.routes.token-service.window-seconds=60",
         "gateway.rate-limit.routes.analytics-service.capacity=2",
         "gateway.rate-limit.routes.analytics-service.window-seconds=60",
-        "gateway.rate-limit.whitelist-paths=/actuator/**"
+        "gateway.rate-limit.whitelist-paths=/actuator/**",
+        "spring.main.allow-bean-definition-overriding=true"
     }
 )
 class GatewayRateLimitTest {
     private static DisposableServer mockTokenService;
     private static DisposableServer mockActuatorService;
     private static DisposableServer mockAnalyticsService;
+    private static DisposableServer mockMiscService;
 
     private WebTestClient webTestClient;
 
@@ -77,6 +79,12 @@ class GatewayRateLimitTest {
                 .route(GatewayRateLimitTest::analyticsRoutes)
                 .bindNow();
         }
+        if (mockMiscService == null) {
+            mockMiscService = HttpServer.create()
+                .port(0)
+                .route(GatewayRateLimitTest::miscRoutes)
+                .bindNow();
+        }
     }
 
     @AfterAll
@@ -89,6 +97,9 @@ class GatewayRateLimitTest {
         }
         if (mockAnalyticsService != null) {
             mockAnalyticsService.disposeNow();
+        }
+        if (mockMiscService != null) {
+            mockMiscService.disposeNow();
         }
     }
 
@@ -150,13 +161,13 @@ class GatewayRateLimitTest {
             .build();
 
         EntityExchangeResult<String> first = webTestClient.get()
-            .uri("/api/v1/analytics/usage")
+            .uri("/api/v1/misc/ping")
             .exchange()
             .expectBody(String.class)
             .returnResult();
 
         EntityExchangeResult<String> second = webTestClient.get()
-            .uri("/api/v1/analytics/usage")
+            .uri("/api/v1/misc/ping")
             .exchange()
             .expectBody(String.class)
             .returnResult();
@@ -200,6 +211,30 @@ class GatewayRateLimitTest {
         assertThat(third.getResponseHeaders().getFirst("Retry-After")).isNotBlank();
     }
 
+    @Test
+    void usesUserHeaderWhenApiKeyMissing() {
+        webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+
+        EntityExchangeResult<String> userOne = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .header("X-User-Id", "user-1")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        EntityExchangeResult<String> userTwo = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .header("X-User-Id", "user-2")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        assertThat(userOne.getStatus().value()).isEqualTo(200);
+        assertThat(userTwo.getStatus().value()).isEqualTo(200);
+    }
+
     private static HttpServerRoutes tokenRoutes(HttpServerRoutes routes) {
         return routes.post("/api/v1/tokens/consume", (request, response) -> respondOk(response));
     }
@@ -213,6 +248,10 @@ class GatewayRateLimitTest {
 
     private static HttpServerRoutes analyticsRoutes(HttpServerRoutes routes) {
         return routes.get("/api/v1/analytics/usage", (request, response) -> respondOk(response));
+    }
+
+    private static HttpServerRoutes miscRoutes(HttpServerRoutes routes) {
+        return routes.get("/api/v1/misc/ping", (request, response) -> respondOk(response));
     }
 
     private static Mono<Void> respondOk(HttpServerResponse response) {
@@ -236,6 +275,9 @@ class GatewayRateLimitTest {
                 .route("analytics-service", route -> route
                     .path("/api/v1/analytics/**")
                     .uri("http://localhost:" + mockAnalyticsService.port()))
+                .route("misc-service", route -> route
+                    .path("/api/v1/misc/**")
+                    .uri("http://localhost:" + mockMiscService.port()))
                 .build();
         }
 

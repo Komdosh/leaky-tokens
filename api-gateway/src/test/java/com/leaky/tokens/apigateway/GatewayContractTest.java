@@ -37,7 +37,8 @@ import reactor.netty.http.server.HttpServerResponse;
         "spring.cloud.gateway.discovery.locator.enabled=false",
         "gateway.rate-limit.enabled=false",
         "gateway.api-key.enabled=true",
-        "gateway.security.permit-all=true"
+        "gateway.security.permit-all=true",
+        "spring.main.allow-bean-definition-overriding=true"
     }
 )
 class GatewayContractTest {
