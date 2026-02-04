@@ -34,6 +34,11 @@
 - Added unit tests for auth and analytics services (happy + negative paths).
 - Added gateway circuit breakers with fallback handlers.
 - Added business metrics counters and Prometheus alert rules.
+- Migrated Redis JSON serialization to Jackson 3 (`tools.jackson`).
+- Added quota window reset support and tier-based quota/rate limits.
+- Added organization-level quotas (org pools + org quota endpoints).
+- Added token bucket entry expiration (TTL + cleanup job).
+- Improved gateway rate limiting (AUTO keying, per-route overrides, whitelist, cleanup).
 
 ---
 
@@ -113,6 +118,9 @@
 - [x] Multiple provider support (Qwen, Gemini, OpenAI)
 - [x] Advanced rate limiting strategies
 - [x] Token quota management
+- [x] Tier-based quota/rate limits
+- [x] Organization-level quotas
+- [x] Token bucket expiration cleanup
 - [x] Integration with stub services
 
 ### 4. Stub API Services
@@ -199,10 +207,10 @@
 - [x] SAGA execution tests
 
 ### Next Steps
-1. Add SAGA execution tests and token service integration tests
-2. Add token quota management + advanced rate limiting
-3. Add API key management and RBAC
-4. Add alerting and performance monitoring
+1. Document tier/org quota usage (API examples)
+2. Expand gateway rate limit tests (route overrides + whitelist)
+3. Add performance baseline reports (saved artifacts)
+4. Clean up remaining warnings (unchecked ops in provider client)
 
 ---
 
@@ -263,7 +271,7 @@
 ## Risk Assessment
 
 ### High Risk Items
-- [ ] Java 25 compatibility with Spring Boot (new technology)
+- [x] Java 25 compatibility with Spring Boot (new technology)
 - [ ] SAGA reliability and test coverage
 - [ ] Cassandra integration complexity
 - [ ] Distributed tracing setup
@@ -274,7 +282,7 @@
 - [ ] Integration testing complexity
 
 ### Mitigation Strategies
-- [ ] Early POC for Java 25 compatibility
+- [x] Early POC for Java 25 compatibility
 - [ ] Step-by-step SAGA implementation with testing
 - [ ] Thorough documentation and examples for Cassandra
 - [ ] Gradual rollout of complex features
