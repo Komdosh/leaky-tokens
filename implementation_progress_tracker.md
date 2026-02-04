@@ -34,6 +34,7 @@
 - Added analytics report clamp test and tier multiplier fallback checks.
 - Added gateway invalid key and cache-miss tests.
 - Added saga recovery disable-path test.
+- Added rate-limit cleanup, quota reset-disabled, and baseline clamp tests.
 
 ## Blocking / Known Issues
 - None currently.

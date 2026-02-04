@@ -137,6 +137,29 @@ class AnalyticsReportServiceTest {
         verify(repository).findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(50));
     }
 
+    @Test
+    void detectAnomalyClampsBaselineWindowsToMax() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportProperties properties = new AnalyticsReportProperties();
+        properties.setDefaultWindowMinutes(60);
+        properties.setMaxWindowMinutes(120);
+        properties.setMaxLimit(100);
+        properties.setDefaultBaselineWindows(2);
+        properties.setMaxBaselineWindows(4);
+
+        when(repository.findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(100)))
+            .thenReturn(List.of(record("openai", "user-a", 200, true)))
+            .thenReturn(List.of(record("openai", "user-a", 100, true)))
+            .thenReturn(List.of(record("openai", "user-a", 100, true)))
+            .thenReturn(List.of(record("openai", "user-a", 100, true)))
+            .thenReturn(List.of(record("openai", "user-a", 100, true)));
+
+        AnalyticsReportService service = new AnalyticsReportService(repository, properties);
+        AnalyticsAnomalyResponse response = service.detectAnomaly("openai", 60, 99, 2.0, 100);
+
+        assertThat(response.getBaselineWindows()).isEqualTo(4);
+    }
+
     private static TokenUsageByProviderRecord record(String provider, String userId, long tokens, boolean allowed) {
         TokenUsageByProviderKey key = new TokenUsageByProviderKey(provider, Instant.now());
         return new TokenUsageByProviderRecord(key, userId, tokens, allowed);

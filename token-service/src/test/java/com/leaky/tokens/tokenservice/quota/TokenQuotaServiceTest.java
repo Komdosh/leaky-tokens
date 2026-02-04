@@ -166,6 +166,22 @@ class TokenQuotaServiceTest {
         assertThat(reservation.remaining()).isEqualTo(150);
     }
 
+    @Test
+    void addTokensSkipsResetWhenQuotaDisabled() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        when(repository.findForUpdate(any(), any())).thenReturn(Optional.empty());
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setQuotaEnforcement(false);
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), flags);
+
+        TokenPool pool = service.addTokens(UUID.randomUUID(), "openai", 100, null);
+
+        assertThat(pool.getResetTime()).isNull();
+    }
+
     private TokenQuotaProperties quotaProps() {
         TokenQuotaProperties properties = new TokenQuotaProperties();
         properties.setEnabled(true);
