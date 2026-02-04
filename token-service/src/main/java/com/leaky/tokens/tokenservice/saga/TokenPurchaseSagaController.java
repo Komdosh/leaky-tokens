@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,7 +25,8 @@ public class TokenPurchaseSagaController {
 
     @PostMapping("/api/v1/tokens/purchase")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> purchase(@RequestBody TokenPurchaseRequest request) {
+    public ResponseEntity<?> purchase(@RequestBody TokenPurchaseRequest request,
+                                      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         if (request.getUserId() == null || request.getUserId().isBlank()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("userId is required", Instant.now()));
         }
@@ -34,14 +36,20 @@ public class TokenPurchaseSagaController {
         if (request.getTokens() <= 0) {
             return ResponseEntity.badRequest().body(new ErrorResponse("tokens must be positive", Instant.now()));
         }
+        if (idempotencyKey != null && idempotencyKey.trim().length() > 100) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("idempotency key too long", Instant.now()));
+        }
 
         try {
             if (request.getOrgId() != null && !request.getOrgId().isBlank()) {
                 java.util.UUID.fromString(request.getOrgId());
             }
             TokenTierProperties.TierConfig tier = tierResolver.resolveTier();
-            TokenPurchaseResponse response = sagaService.start(request, tier);
+            TokenPurchaseResponse response = sagaService.start(request, tier, idempotencyKey);
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        } catch (IdempotencyConflictException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage(), Instant.now()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId or orgId", Instant.now()));
         }

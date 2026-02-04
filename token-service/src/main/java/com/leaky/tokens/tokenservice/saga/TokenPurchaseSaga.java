@@ -33,6 +33,9 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
     @Column(nullable = false)
     private long tokens;
 
+    @Column(name = "idempotency_key", length = 100)
+    private String idempotencyKey;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private TokenPurchaseSagaStatus status;
@@ -110,6 +113,14 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
 
     public void setTokens(long tokens) {
         this.tokens = tokens;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public TokenPurchaseSagaStatus getStatus() {

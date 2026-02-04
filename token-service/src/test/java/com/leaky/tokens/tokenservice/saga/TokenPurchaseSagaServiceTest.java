@@ -3,11 +3,13 @@ package com.leaky.tokens.tokenservice.saga;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 
 import tools.jackson.databind.ObjectMapper;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
@@ -50,7 +52,7 @@ class TokenPurchaseSagaServiceTest {
         request.setTokens(10);
 
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
-        TokenPurchaseResponse response = service.start(request, tier);
+        TokenPurchaseResponse response = service.start(request, tier, null);
         assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
 
         ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
@@ -64,5 +66,40 @@ class TokenPurchaseSagaServiceTest {
         assertThat(eventTypes).doesNotContain("TOKEN_PURCHASE_COMPLETED");
 
         verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
+    }
+
+    @Test
+    void returnsExistingSagaForIdempotencyKey() {
+        TokenPurchaseSaga existing = new TokenPurchaseSaga(
+            java.util.UUID.randomUUID(),
+            java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            null,
+            "openai",
+            10,
+            TokenPurchaseSagaStatus.COMPLETED
+        );
+        existing.setIdempotencyKey("idem-1");
+
+        when(sagaRepository.findByIdempotencyKey(eq("idem-1"))).thenReturn(Optional.of(existing));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("openai");
+        request.setTokens(10);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, "idem-1");
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
+        verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
     }
 }

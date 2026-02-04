@@ -2,11 +2,13 @@ package com.leaky.tokens.tokenservice.saga;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Optional;
 
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,14 +36,39 @@ public class TokenPurchaseSagaService {
     }
 
     @Transactional
-    public TokenPurchaseResponse start(TokenPurchaseRequest request, TokenTierProperties.TierConfig tier) {
+    public TokenPurchaseResponse start(TokenPurchaseRequest request, TokenTierProperties.TierConfig tier, String idempotencyKey) {
         UUID userId = UUID.fromString(request.getUserId());
         UUID orgId = request.getOrgId() == null || request.getOrgId().isBlank()
             ? null
             : UUID.fromString(request.getOrgId());
+        String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
+
+        if (normalizedKey != null) {
+            Optional<TokenPurchaseSaga> existing = sagaRepository.findByIdempotencyKey(normalizedKey);
+            if (existing.isPresent()) {
+                TokenPurchaseSaga saga = existing.get();
+                if (!matchesRequest(saga, userId, orgId, request)) {
+                    throw new IdempotencyConflictException("Idempotency key reuse with different payload");
+                }
+                return new TokenPurchaseResponse(saga.getId(), saga.getStatus(), saga.getCreatedAt());
+            }
+        }
         TokenPurchaseSaga saga = new TokenPurchaseSaga(UUID.randomUUID(), userId, orgId,
             request.getProvider(), request.getTokens(), TokenPurchaseSagaStatus.STARTED);
-        sagaRepository.save(saga);
+        saga.setIdempotencyKey(normalizedKey);
+        try {
+            sagaRepository.save(saga);
+        } catch (DataIntegrityViolationException ex) {
+            if (normalizedKey != null) {
+                TokenPurchaseSaga existing = sagaRepository.findByIdempotencyKey(normalizedKey)
+                    .orElseThrow(() -> ex);
+                if (!matchesRequest(existing, userId, orgId, request)) {
+                    throw new IdempotencyConflictException("Idempotency key reuse with different payload");
+                }
+                return new TokenPurchaseResponse(existing.getId(), existing.getStatus(), existing.getCreatedAt());
+            }
+            throw ex;
+        }
         emitEvent(saga, "TOKEN_PURCHASE_STARTED");
 
         saga.setStatus(TokenPurchaseSagaStatus.PAYMENT_RESERVED);
@@ -70,6 +97,30 @@ public class TokenPurchaseSagaService {
         emitEvent(saga, "TOKEN_PURCHASE_COMPLETED");
 
         return new TokenPurchaseResponse(saga.getId(), saga.getStatus(), saga.getCreatedAt());
+    }
+
+    private boolean matchesRequest(TokenPurchaseSaga saga, UUID userId, UUID orgId, TokenPurchaseRequest request) {
+        if (!saga.getUserId().equals(userId)) {
+            return false;
+        }
+        if (saga.getOrgId() == null && orgId != null) {
+            return false;
+        }
+        if (saga.getOrgId() != null && !saga.getOrgId().equals(orgId)) {
+            return false;
+        }
+        if (!saga.getProvider().equals(request.getProvider())) {
+            return false;
+        }
+        return saga.getTokens() == request.getTokens();
+    }
+
+    private String normalizeIdempotencyKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        String trimmed = key.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 
     private void emitEvent(TokenPurchaseSaga saga, String eventType) {

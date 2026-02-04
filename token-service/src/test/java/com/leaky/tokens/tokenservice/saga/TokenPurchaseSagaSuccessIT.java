@@ -59,7 +59,7 @@ class TokenPurchaseSagaSuccessIT extends TokenServiceIntegrationTestBase {
         request.setTokens(10);
 
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
-        TokenPurchaseResponse response = sagaService.start(request, tier);
+        TokenPurchaseResponse response = sagaService.start(request, tier, null);
 
         assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
 
