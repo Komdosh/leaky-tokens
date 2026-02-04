@@ -280,6 +280,48 @@ token:
         quota-max-tokens: 500000
 ```
 
+#### Tier/Org Quota Usage (API Examples)
+
+Obtain a JWT (roles default to `USER` on registration):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"quota-user","email":"quota-user@example.com","password":"password"}' | jq -r .token)
+```
+
+Check user quota:
+
+```bash
+curl -s "http://localhost:8082/api/v1/tokens/quota?userId=00000000-0000-0000-0000-000000000001&provider=openai" \
+  -H "Authorization: Bearer ${TOKEN}" | jq
+```
+
+Consume tokens (user quota):
+
+```bash
+curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":25}' | jq
+```
+
+Consume tokens (org quota):
+
+```bash
+curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{"userId":"00000000-0000-0000-0000-000000000001","orgId":"10000000-0000-0000-0000-000000000001","provider":"openai","tokens":25}' | jq
+```
+
+Org quota lookup:
+
+```bash
+curl -s "http://localhost:8082/api/v1/tokens/quota/org?orgId=10000000-0000-0000-0000-000000000001&provider=openai" \
+  -H "Authorization: Bearer ${TOKEN}" | jq
+```
+
 ### Organization Quotas
 
 If `orgId` is provided, the token service applies org-level quotas instead of user-level quotas.
