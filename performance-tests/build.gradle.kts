@@ -88,8 +88,54 @@ val runUsage = registerGatlingRunTask(
     "com.leaky.tokens.perf.TokenUsagePublishSimulation"
 )
 
+fun waitForUrl(url: String, timeoutSeconds: Long, intervalMillis: Long) {
+    val client = java.net.http.HttpClient.newBuilder()
+        .connectTimeout(java.time.Duration.ofSeconds(5))
+        .build()
+    val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(timeoutSeconds)
+    var lastError: String? = null
+    while (System.nanoTime() < deadline) {
+        try {
+            val request = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(5))
+                .GET()
+                .build()
+            val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.discarding())
+            if (response.statusCode() in 200..299) {
+                return
+            }
+            lastError = "status=${response.statusCode()}"
+        } catch (ex: Exception) {
+            lastError = ex.javaClass.simpleName + (ex.message?.let { ": $it" } ?: "")
+        }
+        Thread.sleep(intervalMillis)
+    }
+    throw GradleException("Timed out waiting for $url (${lastError ?: "unknown error"})")
+}
+
+val readinessUrls = listOf(
+    System.getProperty("perf.readiness.auth", "http://localhost:8081/actuator/health"),
+    System.getProperty("perf.readiness.token", "http://localhost:8082/actuator/health"),
+    System.getProperty("perf.readiness.analytics", "http://localhost:8083/actuator/health"),
+    System.getProperty("perf.readiness.gateway", "http://localhost:8080/actuator/health")
+)
+
+tasks.register("waitForReadiness") {
+    group = "gatling"
+    description = "Wait for dependent services to be ready before running Gatling"
+    doLast {
+        val timeoutSeconds = System.getProperty("perf.readiness.timeoutSeconds", "120").toLong()
+        val intervalMillis = System.getProperty("perf.readiness.intervalMillis", "1000").toLong()
+        readinessUrls.forEach { url ->
+            logger.lifecycle("Waiting for readiness: $url")
+            waitForUrl(url, timeoutSeconds, intervalMillis)
+        }
+    }
+}
+
 tasks.register("runGatlingAll") {
     group = "gatling"
     description = "Run all Gatling simulations sequentially"
-    dependsOn(runAnalytics, runAuth, runConsume, runPurchase, runQuota, runUsage)
+    dependsOn("waitForReadiness", runAnalytics, runAuth, runConsume, runPurchase, runQuota, runUsage)
 }
