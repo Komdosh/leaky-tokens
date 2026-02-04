@@ -19,6 +19,12 @@ import com.leaky.tokens.tokenservice.quota.TokenQuotaReservation;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import com.leaky.tokens.tokenservice.tier.TokenTierResolver;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
+@Tag(name = "Tokens")
 public class TokenController {
     private final TokenBucketService tokenBucketService;
     private final ProviderCallService providerCallService;
@@ -51,6 +58,10 @@ public class TokenController {
     }
 
     @GetMapping("/api/v1/tokens/status")
+    @Operation(
+        summary = "Service status",
+        responses = @ApiResponse(responseCode = "200", description = "Service is up")
+    )
     public Map<String, Object> status() {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("service", "token-service");
@@ -61,6 +72,16 @@ public class TokenController {
 
     @GetMapping("/api/v1/tokens/quota")
     @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Fetch user quota",
+        security = @SecurityRequirement(name = "bearerAuth"),
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Quota found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Quota not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+        }
+    )
     public ResponseEntity<?> quota(@RequestParam("userId") String userId,
                                    @RequestParam("provider") String provider) {
         if (userId == null || userId.isBlank()) {
@@ -101,6 +122,16 @@ public class TokenController {
 
     @GetMapping("/api/v1/tokens/quota/org")
     @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Fetch org quota",
+        security = @SecurityRequirement(name = "bearerAuth"),
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Org quota found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Quota not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+        }
+    )
     public ResponseEntity<?> orgQuota(@RequestParam("orgId") String orgId,
                                       @RequestParam("provider") String provider) {
         if (orgId == null || orgId.isBlank()) {
@@ -141,6 +172,18 @@ public class TokenController {
 
     @PostMapping("/api/v1/tokens/consume")
     @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Consume tokens (user or org quota)",
+        security = @SecurityRequirement(name = "bearerAuth"),
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Tokens consumed"),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "402", description = "Insufficient quota", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "429", description = "Rate limited", content = @Content(schema = @Schema(implementation = TokenConsumeResponse.class))),
+            @ApiResponse(responseCode = "502", description = "Provider call failed", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+        }
+    )
     public ResponseEntity<?> consume(@RequestBody TokenConsumeRequest request, HttpServletRequest httpRequest) {
         String userId = request.getUserId();
         String orgId = request.getOrgId();

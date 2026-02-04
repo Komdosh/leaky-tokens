@@ -256,6 +256,28 @@ curl -s -X POST http://localhost:8080/api/v1/tokens/consume \
   -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":100}' | jq
 ```
 
+### OpenAPI / Swagger UI
+
+Each service exposes OpenAPI docs and Swagger UI:
+
+```bash
+# API Gateway
+open http://localhost:8080/swagger-ui/index.html
+curl -s http://localhost:8080/v3/api-docs | jq
+
+# Auth Server
+open http://localhost:8081/swagger-ui/index.html
+curl -s http://localhost:8081/v3/api-docs | jq
+
+# Token Service
+open http://localhost:8082/swagger-ui/index.html
+curl -s http://localhost:8082/v3/api-docs | jq
+
+# Analytics Service
+open http://localhost:8083/swagger-ui/index.html
+curl -s http://localhost:8083/v3/api-docs | jq
+```
+
 ### Tiered Quotas (USER/ADMIN)
 
 Tiers are resolved from JWT roles and can override quota caps and rate limits.

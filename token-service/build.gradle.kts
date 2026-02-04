@@ -12,6 +12,9 @@ dependencies {
     // Web
     implementation("org.springframework.boot:spring-boot-starter-web")
 
+    // OpenAPI (Swagger UI)
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0")
+
     // WebClient for provider calls
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 

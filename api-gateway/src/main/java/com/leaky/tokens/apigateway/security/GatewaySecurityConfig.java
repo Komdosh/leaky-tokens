@@ -50,6 +50,7 @@ public class GatewaySecurityConfig {
         } else {
             configured.authorizeExchange(exchanges -> exchanges
                 .pathMatchers("/api/v1/auth/**").permitAll()
+                .pathMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .pathMatchers(HttpMethod.GET, "/actuator/**").permitAll()
                 .anyExchange().authenticated()
             );

@@ -5,6 +5,12 @@ import java.time.Instant;
 import com.leaky.tokens.tokenservice.dto.ErrorResponse;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import com.leaky.tokens.tokenservice.tier.TokenTierResolver;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Token Purchase")
 public class TokenPurchaseSagaController {
     private final TokenPurchaseSagaService sagaService;
     private final TokenTierResolver tierResolver;
@@ -25,6 +32,16 @@ public class TokenPurchaseSagaController {
 
     @PostMapping("/api/v1/tokens/purchase")
     @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Start token purchase saga",
+        security = @SecurityRequirement(name = "bearerAuth"),
+        responses = {
+            @ApiResponse(responseCode = "202", description = "Saga accepted"),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Idempotency conflict", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+        }
+    )
     public ResponseEntity<?> purchase(@RequestBody TokenPurchaseRequest request,
                                       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         if (request.getUserId() == null || request.getUserId().isBlank()) {

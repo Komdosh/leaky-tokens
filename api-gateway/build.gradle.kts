@@ -28,6 +28,9 @@ dependencies {
 
     // OAuth2 Resource Server (JWT)
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
+    // OpenAPI (Swagger UI)
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.0")
     
     // Actuator for health checks
     implementation("org.springframework.boot:spring-boot-starter-actuator")
