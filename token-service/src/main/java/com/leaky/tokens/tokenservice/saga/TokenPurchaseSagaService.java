@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class TokenPurchaseSagaService {
     }
 
     @Transactional
-    public TokenPurchaseResponse start(TokenPurchaseRequest request) {
+    public TokenPurchaseResponse start(TokenPurchaseRequest request, TokenTierProperties.TierConfig tier) {
         UUID userId = UUID.fromString(request.getUserId());
         TokenPurchaseSaga saga = new TokenPurchaseSaga(UUID.randomUUID(), userId,
             request.getProvider(), request.getTokens(), TokenPurchaseSagaStatus.STARTED);
@@ -52,7 +53,7 @@ public class TokenPurchaseSagaService {
             return new TokenPurchaseResponse(saga.getId(), saga.getStatus(), saga.getCreatedAt());
         }
 
-        quotaService.addTokens(userId, request.getProvider(), request.getTokens());
+        quotaService.addTokens(userId, request.getProvider(), request.getTokens(), tier);
         saga.setStatus(TokenPurchaseSagaStatus.TOKENS_ALLOCATED);
         sagaRepository.save(saga);
         emitEvent(saga, "TOKEN_ALLOCATED");

@@ -11,6 +11,7 @@ import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenPoolRepository;
 import com.leaky.tokens.tokenservice.support.TokenServiceIntegrationTestBase;
 import com.leaky.tokens.tokenservice.support.TokenServiceTestConfig;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,8 @@ class TokenPurchaseSagaFailureIT extends TokenServiceIntegrationTestBase {
         request.setProvider("openai");
         request.setTokens(10);
 
-        TokenPurchaseResponse response = sagaService.start(request);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = sagaService.start(request, tier);
 
         assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
 

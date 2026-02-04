@@ -21,6 +21,8 @@ import com.leaky.tokens.tokenservice.provider.ProviderRequest;
 import com.leaky.tokens.tokenservice.provider.ProviderResponse;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaReservation;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
+import com.leaky.tokens.tokenservice.tier.TokenTierResolver;
 import com.leaky.tokens.tokenservice.web.RateLimitHeadersFilter;
 import com.leaky.tokens.tokenservice.web.SecurityHeadersFilter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -35,16 +37,21 @@ class TokenControllerTest {
         Instant now = Instant.parse("2026-02-03T10:00:00Z");
         TokenBucketResult allowed = TokenBucketResult.allowed(1000, 100, 0L, now);
         TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        when(tierResolver.resolveTier()).thenReturn(tier);
         when(quotaService.reserve(
             java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
             "openai",
-            100
+            100,
+            tier
         )).thenReturn(new TokenQuotaReservation(true, 1000, 900));
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
             new TokenController(new StubTokenBucketService(allowed),
                 new StubProviderCallService(),
                 quotaService,
-                new TokenServiceMetrics(new SimpleMeterRegistry()))
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver)
         ).addFilters(new RateLimitHeadersFilter(), new SecurityHeadersFilter()).build();
 
         mockMvc.perform(
@@ -70,16 +77,21 @@ class TokenControllerTest {
         Instant now = Instant.parse("2026-02-03T10:00:00Z");
         TokenBucketResult denied = TokenBucketResult.denied(1000, 1000, 5L, now);
         TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        when(tierResolver.resolveTier()).thenReturn(tier);
         when(quotaService.reserve(
             java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
             "openai",
-            1
+            1,
+            tier
         )).thenReturn(new TokenQuotaReservation(true, 10, 9));
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
             new TokenController(new StubTokenBucketService(denied),
                 new StubProviderCallService(),
                 quotaService,
-                new TokenServiceMetrics(new SimpleMeterRegistry()))
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver)
         ).addFilters(new RateLimitHeadersFilter(), new SecurityHeadersFilter()).build();
 
         mockMvc.perform(
@@ -98,12 +110,14 @@ class TokenControllerTest {
     @Test
     void consumeValidatesRequest() throws Exception {
         TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
             new TokenController(
                 new StubTokenBucketService(TokenBucketResult.allowed(1, 0, 0L, Instant.now())),
                 new StubProviderCallService(),
                 quotaService,
-                new TokenServiceMetrics(new SimpleMeterRegistry())
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
             )
         ).addFilters(new RateLimitHeadersFilter(), new SecurityHeadersFilter()).build();
 
@@ -125,7 +139,10 @@ class TokenControllerTest {
         }
 
         @Override
-        public TokenBucketResult consume(String userId, String provider, long tokens) {
+        public TokenBucketResult consume(String userId,
+                                         String provider,
+                                         long tokens,
+                                         TokenTierProperties.TierConfig tier) {
             return result;
         }
     }

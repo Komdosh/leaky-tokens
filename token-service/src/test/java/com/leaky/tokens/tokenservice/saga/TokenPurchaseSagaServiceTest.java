@@ -13,6 +13,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -48,7 +49,8 @@ class TokenPurchaseSagaServiceTest {
         request.setProvider("openai");
         request.setTokens(10);
 
-        TokenPurchaseResponse response = service.start(request);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier);
         assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
 
         ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
@@ -61,6 +63,6 @@ class TokenPurchaseSagaServiceTest {
         assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED");
         assertThat(eventTypes).doesNotContain("TOKEN_PURCHASE_COMPLETED");
 
-        verify(quotaService, times(0)).addTokens(any(), any(), anyLong());
+        verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
     }
 }

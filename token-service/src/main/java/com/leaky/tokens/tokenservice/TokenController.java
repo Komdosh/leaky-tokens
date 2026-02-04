@@ -17,6 +17,8 @@ import com.leaky.tokens.tokenservice.provider.ProviderRequest;
 import com.leaky.tokens.tokenservice.provider.ProviderResponse;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaReservation;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
+import com.leaky.tokens.tokenservice.tier.TokenTierResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,15 +36,18 @@ public class TokenController {
     private final ProviderCallService providerCallService;
     private final TokenQuotaService quotaService;
     private final TokenServiceMetrics metrics;
+    private final TokenTierResolver tierResolver;
 
     public TokenController(TokenBucketService tokenBucketService,
                            ProviderCallService providerCallService,
                            TokenQuotaService quotaService,
-                           TokenServiceMetrics metrics) {
+                           TokenServiceMetrics metrics,
+                           TokenTierResolver tierResolver) {
         this.tokenBucketService = tokenBucketService;
         this.providerCallService = providerCallService;
         this.quotaService = quotaService;
         this.metrics = metrics;
+        this.tierResolver = tierResolver;
     }
 
     @GetMapping("/api/v1/tokens/status")
@@ -75,7 +80,8 @@ public class TokenController {
             return ResponseEntity.badRequest().body(new ErrorResponse("invalid userId", Instant.now()));
         }
 
-        return quotaService.getQuota(userUuid, provider.trim())
+        TokenTierProperties.TierConfig tier = tierResolver.resolveTier();
+        return quotaService.getQuota(userUuid, provider.trim(), tier)
             .<ResponseEntity<?>>map(pool -> {
                 metrics.quotaLookup(provider.trim(), "found");
                 return ResponseEntity.ok(Map.of(
@@ -119,18 +125,19 @@ public class TokenController {
         }
 
         metrics.consumeAttempt(provider.trim());
-        TokenQuotaReservation reservation = quotaService.reserve(userUuid, provider.trim(), tokens);
+        TokenTierProperties.TierConfig tier = tierResolver.resolveTier();
+        TokenQuotaReservation reservation = quotaService.reserve(userUuid, provider.trim(), tokens, tier);
         if (!reservation.allowed()) {
             metrics.consumeQuotaInsufficient(provider.trim());
             return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
                 .body(new ErrorResponse("insufficient token quota", Instant.now()));
         }
 
-        TokenBucketResult result = tokenBucketService.consume(userId.trim(), provider.trim(), tokens);
+        TokenBucketResult result = tokenBucketService.consume(userId.trim(), provider.trim(), tokens, tier);
         httpRequest.setAttribute("tokenBucketResult", result);
 
         if (!result.isAllowed()) {
-            quotaService.release(userUuid, provider.trim(), tokens);
+            quotaService.release(userUuid, provider.trim(), tokens, tier);
             metrics.consumeRateLimited(provider.trim());
             TokenConsumeResponse response = new TokenConsumeResponse(
                 false,
@@ -148,7 +155,7 @@ public class TokenController {
         try {
             providerResponse = providerCallService.call(provider.trim(), new ProviderRequest(request.getPrompt()));
         } catch (ProviderCallException ex) {
-            quotaService.release(userUuid, provider.trim(), tokens);
+            quotaService.release(userUuid, provider.trim(), tokens, tier);
             metrics.consumeProviderFailure(provider.trim());
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new ErrorResponse("provider call failed", Instant.now()));

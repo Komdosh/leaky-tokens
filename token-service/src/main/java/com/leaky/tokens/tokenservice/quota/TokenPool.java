@@ -75,6 +75,16 @@ public class TokenPool {
         updatedAt = now;
     }
 
+    public void capRemainingTokens(long cap, Instant now) {
+        if (cap <= 0) {
+            return;
+        }
+        if (remainingTokens > cap) {
+            remainingTokens = cap;
+            updatedAt = now;
+        }
+    }
+
     public void resetWindow(Instant now, Duration window) {
         remainingTokens = totalTokens;
         resetTime = now.plus(window);
