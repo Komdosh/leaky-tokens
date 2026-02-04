@@ -22,13 +22,12 @@
 - Local profile parity: Eureka + local configs, local analytics security bypass, Cassandra local defaults.
 
 ## Blocking / Known Issues
-- Full Gatling baseline suite still needs a fresh JWT + API key run after auth restart.
+- None currently.
 
 ## Next Actions (Priority Order)
-1. Run full Gatling baseline suite with fresh JWT + API key and save reports.
-2. Document tier/org quota usage (API examples).
-3. Clean up remaining warnings (unchecked ops in provider client).
-4. Add/expand contract tests for gateway-to-service APIs.
+1. Document tier/org quota usage (API examples).
+2. Clean up remaining warnings (unchecked ops in provider client).
+3. Add/expand contract tests for gateway-to-service APIs.
 
 ## Quick Feature Checklist
 - API gateway routing + security + rate limiting: done
@@ -49,7 +48,6 @@
 - Observability (Prometheus/Grafana/Jaeger): done
 
 ### In Progress / Needs Finalization
-- Performance testing: full Gatling baseline run + saved reports
 - Testing coverage: unit tests >80%, remaining contract tests
 - Documentation: API docs (OpenAPI + examples), deployment/ops guides
 - Production readiness: performance tuning, container optimization, CI/CD pipeline
