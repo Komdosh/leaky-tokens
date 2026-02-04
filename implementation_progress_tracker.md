@@ -24,6 +24,7 @@
 - Added analytics reporting + anomaly detection endpoints with configurable windows.
 - Added backup & recovery procedures for Postgres/Cassandra/Redis.
 - Polished OpenAPI schemas, examples, and Swagger UI configs across services.
+- Added unit tests for analytics reporting, JWT config/service, and tier resolution.
 
 ## Blocking / Known Issues
 - None currently.
