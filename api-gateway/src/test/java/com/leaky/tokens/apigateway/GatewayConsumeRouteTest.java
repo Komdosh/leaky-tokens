@@ -177,16 +177,19 @@ class GatewayConsumeRouteTest {
             .header("X-Api-Key", "valid-key")
             .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
             .exchange()
-            .expectStatus().isOk();
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(ignored -> {});
 
         newClient().post()
             .uri("/api/v1/tokens/consume")
             .contentType(APPLICATION_JSON)
             .header("X-Api-Key", "valid-key")
-            .header("X-Drop-Auth", "true")
             .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
             .exchange()
-            .expectStatus().isOk();
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(ignored -> {});
 
         assertThat(authCallCount.get()).isEqualTo(1);
     }
@@ -201,7 +204,9 @@ class GatewayConsumeRouteTest {
             .header("X-Api-Key", "valid-key")
             .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
             .exchange()
-            .expectStatus().isOk();
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(ignored -> {});
 
         Thread.sleep(1500);
 
@@ -211,7 +216,9 @@ class GatewayConsumeRouteTest {
             .header("X-Api-Key", "valid-key")
             .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
             .exchange()
-            .expectStatus().isOk();
+            .expectStatus().isOk()
+            .expectBody()
+            .consumeWith(ignored -> {});
 
         assertThat(authCallCount.get()).isEqualTo(2);
     }
@@ -237,7 +244,9 @@ class GatewayConsumeRouteTest {
             .header("X-Api-Key", "valid-key")
             .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
             .exchange()
-            .expectStatus().isUnauthorized();
+            .expectStatus().isUnauthorized()
+            .expectBody()
+            .consumeWith(ignored -> {});
 
         assertThat(authCallCount.get()).isEqualTo(2);
     }
