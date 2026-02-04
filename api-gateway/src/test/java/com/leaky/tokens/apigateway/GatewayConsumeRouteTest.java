@@ -5,8 +5,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -34,7 +37,8 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
         "spring.cloud.gateway.discovery.locator.enabled=false",
         "gateway.rate-limit.enabled=false",
         "gateway.api-key.enabled=true",
-        "gateway.security.permit-all=true"
+        "gateway.security.permit-all=true",
+        "gateway.api-key.cache-ttl-seconds=1"
     }
 )
 class GatewayConsumeRouteTest {
@@ -43,8 +47,16 @@ class GatewayConsumeRouteTest {
     private static DisposableServer mockAuthService;
     private static final java.util.concurrent.atomic.AtomicInteger authCallCount =
         new java.util.concurrent.atomic.AtomicInteger(0);
+    private static final java.util.concurrent.atomic.AtomicBoolean invalidateNextAuth =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
 
     private WebTestClient webTestClient;
+
+    @Autowired
+    private com.leaky.tokens.apigateway.security.ApiKeyAuthProperties apiKeyAuthProperties;
+
+    @Autowired
+    private com.leaky.tokens.apigateway.security.ApiKeyValidationCache apiKeyValidationCache;
 
     @LocalServerPort
     private int port;
@@ -79,6 +91,7 @@ class GatewayConsumeRouteTest {
     static void registerProps(DynamicPropertyRegistry registry) {
         registry.add("gateway.api-key.auth-server-url", () -> "http://localhost:" + mockAuthService.port());
         registry.add("gateway.security.permit-all", () -> "true");
+        registry.add("gateway.api-key.cache-ttl-seconds", () -> "1");
     }
 
     @AfterAll
@@ -91,6 +104,21 @@ class GatewayConsumeRouteTest {
         }
         if (mockAuthService != null) {
             mockAuthService.disposeNow();
+        }
+    }
+
+    @BeforeEach
+    void resetCache() {
+        apiKeyAuthProperties.setCacheTtlSeconds(1);
+        try {
+            java.lang.reflect.Field cacheField =
+                com.leaky.tokens.apigateway.security.ApiKeyValidationCache.class.getDeclaredField("cache");
+            cacheField.setAccessible(true);
+            Object cache = cacheField.get(apiKeyValidationCache);
+            if (cache instanceof java.util.Map<?, ?> map) {
+                map.clear();
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -141,13 +169,9 @@ class GatewayConsumeRouteTest {
 
     @Test
     void reusesCachedApiKeyValidation() {
-        webTestClient = WebTestClient.bindToServer()
-            .baseUrl("http://localhost:" + port)
-            .build();
-
         authCallCount.set(0);
 
-        webTestClient.post()
+        newClient().post()
             .uri("/api/v1/tokens/consume")
             .contentType(APPLICATION_JSON)
             .header("X-Api-Key", "valid-key")
@@ -155,7 +179,7 @@ class GatewayConsumeRouteTest {
             .exchange()
             .expectStatus().isOk();
 
-        webTestClient.post()
+        newClient().post()
             .uri("/api/v1/tokens/consume")
             .contentType(APPLICATION_JSON)
             .header("X-Api-Key", "valid-key")
@@ -165,6 +189,57 @@ class GatewayConsumeRouteTest {
             .expectStatus().isOk();
 
         assertThat(authCallCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    void refreshesCacheAfterTtl() throws Exception {
+        authCallCount.set(0);
+
+        newClient().post()
+            .uri("/api/v1/tokens/consume")
+            .contentType(APPLICATION_JSON)
+            .header("X-Api-Key", "valid-key")
+            .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
+            .exchange()
+            .expectStatus().isOk();
+
+        Thread.sleep(1500);
+
+        newClient().post()
+            .uri("/api/v1/tokens/consume")
+            .contentType(APPLICATION_JSON)
+            .header("X-Api-Key", "valid-key")
+            .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
+            .exchange()
+            .expectStatus().isOk();
+
+        assertThat(authCallCount.get()).isEqualTo(2);
+    }
+
+    @Test
+    void rejectsApiKeyAfterCacheExpires() throws Exception {
+        authCallCount.set(0);
+
+        newClient().post()
+            .uri("/api/v1/tokens/consume")
+            .contentType(APPLICATION_JSON)
+            .header("X-Api-Key", "valid-key")
+            .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
+            .exchange()
+            .expectStatus().isOk();
+
+        invalidateNextAuth.set(true);
+        Thread.sleep(1500);
+
+        newClient().post()
+            .uri("/api/v1/tokens/consume")
+            .contentType(APPLICATION_JSON)
+            .header("X-Api-Key", "valid-key")
+            .bodyValue("{\"userId\":\"u1\",\"provider\":\"openai\",\"tokens\":100}")
+            .exchange()
+            .expectStatus().isUnauthorized();
+
+        assertThat(authCallCount.get()).isEqualTo(2);
     }
 
     @Test
@@ -272,6 +347,9 @@ class GatewayConsumeRouteTest {
             if ("true".equalsIgnoreCase(dropHeader)) {
                 return response.status(503).send();
             }
+            if (invalidateNextAuth.getAndSet(false)) {
+                return response.status(401).send();
+            }
             if (apiKey == null || apiKey.isBlank() || !apiKey.equals("valid-key")) {
                 return response.status(401).send();
             }
@@ -290,7 +368,14 @@ class GatewayConsumeRouteTest {
             .then();
     }
 
+    private WebTestClient newClient() {
+        return WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+    }
+
     @SpringBootApplication
+    @ConfigurationPropertiesScan
     static class TestGatewayApplication {
         @Bean
         RouteLocator testRoutes(RouteLocatorBuilder builder) {
