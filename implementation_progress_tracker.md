@@ -50,6 +50,7 @@
 - Hardened saga against quota allocation failures with compensation.
 - Added saga recovery job for stale/in-progress purchases.
 - Added gateway contract tests for auth/token/analytics header propagation.
+- Ran Gatling baseline suite and saved reports to docs/perf-baselines/2026-02-04.
 
 ---
 

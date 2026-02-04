@@ -81,7 +81,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/service-discovery", ":service-discovery:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/service-discovery", "--project-cache-dir", "/root/.gradle/project-cache/service-discovery", ":service-discovery:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/service-discovery
     ports:
@@ -93,7 +93,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/config-server", ":config-server:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/config-server", "--project-cache-dir", "/root/.gradle/project-cache/config-server", ":config-server:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/config-server
       - SPRING_PROFILES_ACTIVE=native
@@ -109,7 +109,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/api-gateway", ":api-gateway:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/api-gateway", "--project-cache-dir", "/root/.gradle/project-cache/api-gateway", ":api-gateway:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/api-gateway
       - SPRING_PROFILES_ACTIVE=docker
@@ -127,7 +127,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/auth-server", ":auth-server:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/auth-server", "--project-cache-dir", "/root/.gradle/project-cache/auth-server", ":auth-server:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/auth-server
       - SPRING_PROFILES_ACTIVE=docker
@@ -152,7 +152,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/token-service", ":token-service:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/token-service", "--project-cache-dir", "/root/.gradle/project-cache/token-service", ":token-service:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/token-service
       - SPRING_PROFILES_ACTIVE=docker
@@ -179,14 +179,16 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/analytics-service", ":analytics-service:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/analytics-service", "--project-cache-dir", "/root/.gradle/project-cache/analytics-service", ":analytics-service:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/analytics-service
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_CASSANDRA_CONTACT_POINTS=cassandra
+      - SPRING_CASSANDRA_LOCAL_DATACENTER=datacenter1
       - SPRING_CASSANDRA_KEYSPACE_NAME=analytics_keyspace
+      - SPRING_CASSANDRA_SCHEMA_ACTION=CREATE_IF_NOT_EXISTS
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       - service-discovery
@@ -202,7 +204,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/qwen-stub", ":qwen-stub:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/qwen-stub", "--project-cache-dir", "/root/.gradle/project-cache/qwen-stub", ":qwen-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/qwen-stub
       - SPRING_PROFILES_ACTIVE=docker
@@ -220,7 +222,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/gemini-stub", ":gemini-stub:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/gemini-stub", "--project-cache-dir", "/root/.gradle/project-cache/gemini-stub", ":gemini-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/gemini-stub
       - SPRING_PROFILES_ACTIVE=docker
@@ -238,7 +240,7 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/openai-stub", ":openai-stub:bootRun"]
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/openai-stub", "--project-cache-dir", "/root/.gradle/project-cache/openai-stub", ":openai-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/openai-stub
       - SPRING_PROFILES_ACTIVE=docker

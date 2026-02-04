@@ -13,3 +13,6 @@ spring:
     name: token-service
   config:
     import: "optional:configserver:http://localhost:8888"
+  flyway:
+    enabled: true
+    locations: classpath:db/migration

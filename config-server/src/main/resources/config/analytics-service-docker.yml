@@ -4,6 +4,7 @@ spring:
 
   cassandra:
     contact-points: cassandra
+    local-datacenter: datacenter1
     keyspace-name: analytics_keyspace
     schema-action: CREATE_IF_NOT_EXISTS
 
