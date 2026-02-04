@@ -7,6 +7,11 @@ repositories {
     mavenCentral()
 }
 
+// This module is not a Spring Boot app; disable boot jar tasks if inherited.
+tasks.matching { it.name == "bootJar" || it.name == "bootRun" }.configureEach {
+    enabled = false
+}
+
 // Gradle 9 removed project.reportsDir; Gatling plugin still queries it.
 extra["reportsDir"] = layout.buildDirectory.dir("reports").get().asFile
 
