@@ -35,7 +35,11 @@ gatling {
 }
 
 val gatlingReportDir = layout.buildDirectory.dir("reports/gatling")
-val gatlingJvmArgs = listOf("-Xms512m", "-Xmx1024m")
+val gatlingJvmArgs = listOf(
+    "-Xms512m",
+    "-Xmx1024m",
+    "--enable-native-access=ALL-UNNAMED"
+)
 val gatlingSystemProperties = System.getProperties().entries.associate { (key, value) ->
     key.toString() to value
 }
