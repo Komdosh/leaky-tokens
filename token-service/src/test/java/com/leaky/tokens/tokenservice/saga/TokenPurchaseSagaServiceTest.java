@@ -109,6 +109,68 @@ class TokenPurchaseSagaServiceTest {
     }
 
     @Test
+    void throwsConflictWhenIdempotencyKeyReusedWithDifferentPayload() {
+        TokenPurchaseSaga existing = new TokenPurchaseSaga(
+            java.util.UUID.randomUUID(),
+            java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            null,
+            "openai",
+            10,
+            TokenPurchaseSagaStatus.STARTED
+        );
+        existing.setIdempotencyKey("idem-1");
+
+        when(sagaRepository.findByIdempotencyKey(eq("idem-1"))).thenReturn(Optional.of(existing));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("gemini");
+        request.setTokens(10);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.start(request, tier, "idem-1"))
+            .isInstanceOf(IdempotencyConflictException.class)
+            .hasMessageContaining("Idempotency key reuse");
+    }
+
+    @Test
+    void skipsSagaWhenFeatureFlagDisabled() {
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setSagaPurchases(false);
+        flags.setQuotaEnforcement(true);
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            flags
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("openai");
+        request.setTokens(10);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.start(request, tier, null))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("saga disabled");
+    }
+
+    @Test
     void marksSagaFailedWhenQuotaAllocationThrows() {
         when(sagaRepository.save(any(TokenPurchaseSaga.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(outboxRepository.save(any(TokenOutboxEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));

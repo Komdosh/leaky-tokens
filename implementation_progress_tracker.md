@@ -30,6 +30,7 @@
 - Added gateway cache and rate limit edge-case tests.
 - Added auth/api-key edge case tests and analytics anomaly clamp coverage.
 - Added token bucket engine and service edge-case tests.
+- Added saga controller/service edge-case tests (idempotency, flags).
 
 ## Blocking / Known Issues
 - None currently.
