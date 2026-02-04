@@ -49,6 +49,7 @@
 - Added idempotency support for token purchase saga.
 - Hardened saga against quota allocation failures with compensation.
 - Added saga recovery job for stale/in-progress purchases.
+- Added gateway contract tests for auth/token/analytics header propagation.
 
 ---
 
@@ -181,7 +182,7 @@
 ### 2. Testing
 - [ ] Unit test coverage (>80%)
 - [x] Integration tests
-- [ ] Contract tests
+- [x] Contract tests
 - [x] Performance tests
 
 ### 3. Documentation
