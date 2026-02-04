@@ -179,16 +179,27 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/analytics-service", "--project-cache-dir", "/root/.gradle/project-cache/analytics-service", ":analytics-service:bootRun"]
+    command:
+      [
+        "bash",
+        "-lc",
+        "until bash -c '</dev/tcp/cassandra-db/9042' 2>/dev/null; do sleep 2; done; sleep 30; ./gradlew --gradle-user-home /root/.gradle/analytics-service --project-cache-dir /root/.gradle/project-cache/analytics-service :analytics-service:bootRun",
+      ]
+    restart: on-failure
     environment:
       - GRADLE_USER_HOME=/root/.gradle/analytics-service
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
-      - SPRING_CASSANDRA_CONTACT_POINTS=cassandra
+      - SPRING_CASSANDRA_CONTACT_POINTS=cassandra-db
       - SPRING_CASSANDRA_LOCAL_DATACENTER=datacenter1
       - SPRING_CASSANDRA_KEYSPACE_NAME=analytics_keyspace
       - SPRING_CASSANDRA_SCHEMA_ACTION=CREATE_IF_NOT_EXISTS
+      - SPRING_DATA_CASSANDRA_CONTACT_POINTS=cassandra-db
+      - SPRING_DATA_CASSANDRA_LOCAL_DATACENTER=datacenter1
+      - SPRING_DATA_CASSANDRA_KEYSPACE_NAME=analytics_keyspace
+      - SPRING_DATA_CASSANDRA_SCHEMA_ACTION=CREATE_IF_NOT_EXISTS
+      - 'SPRING_APPLICATION_JSON={"spring":{"cassandra":{"contact-points":["cassandra-db"],"local-datacenter":"datacenter1","keyspace-name":"analytics_keyspace","schema-action":"CREATE_IF_NOT_EXISTS"},"data":{"cassandra":{"contact-points":["cassandra-db"],"local-datacenter":"datacenter1","keyspace-name":"analytics_keyspace","schema-action":"CREATE_IF_NOT_EXISTS"}}}}'
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       - service-discovery

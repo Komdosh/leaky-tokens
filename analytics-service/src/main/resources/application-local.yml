@@ -1,7 +1,20 @@
 spring:
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
       - org.springframework.boot.autoconfigure.kafka.KafkaStreamsAutoConfiguration
+  cassandra:
+    contact-points: localhost
+    local-datacenter: datacenter1
+    keyspace-name: analytics_keyspace
+    schema-action: CREATE_IF_NOT_EXISTS
+  data:
+    cassandra:
+      contact-points: localhost
+      local-datacenter: datacenter1
+      keyspace-name: analytics_keyspace
+      schema-action: CREATE_IF_NOT_EXISTS
+
+analytics:
+  token-usage:
+    enabled: false

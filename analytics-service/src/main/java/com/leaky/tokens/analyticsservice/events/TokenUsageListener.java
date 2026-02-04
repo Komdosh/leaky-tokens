@@ -9,11 +9,13 @@ import com.leaky.tokens.analyticsservice.storage.TokenUsageRecord;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
+@ConditionalOnProperty(name = "analytics.token-usage.enabled", havingValue = "true", matchIfMissing = true)
 public class TokenUsageListener {
     private static final Logger logger = LoggerFactory.getLogger(TokenUsageListener.class);
 

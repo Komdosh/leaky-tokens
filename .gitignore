@@ -41,3 +41,4 @@ tmp/
 # Manually excluded
 lib/
 performance-reports
+perf-baselines

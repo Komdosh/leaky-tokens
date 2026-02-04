@@ -3,9 +3,16 @@ spring:
     bootstrap-servers: kafka:9092
 
   cassandra:
-    contact-points: cassandra
+    contact-points: cassandra-db
+    local-datacenter: datacenter1
     keyspace-name: analytics_keyspace
     schema-action: CREATE_IF_NOT_EXISTS
+  data:
+    cassandra:
+      contact-points: cassandra-db
+      local-datacenter: datacenter1
+      keyspace-name: analytics_keyspace
+      schema-action: CREATE_IF_NOT_EXISTS
 
 analytics:
   token-usage:
