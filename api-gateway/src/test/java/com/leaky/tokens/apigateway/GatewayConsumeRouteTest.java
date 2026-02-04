@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -57,6 +58,9 @@ class GatewayConsumeRouteTest {
 
     @Autowired
     private com.leaky.tokens.apigateway.security.ApiKeyValidationCache apiKeyValidationCache;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     @LocalServerPort
     private int port;
@@ -120,6 +124,7 @@ class GatewayConsumeRouteTest {
             }
         } catch (Exception ignored) {
         }
+        meterRegistry.getMeters().forEach(meterRegistry::remove);
         newClient().get()
             .uri("/actuator/health")
             .exchange()
