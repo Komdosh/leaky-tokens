@@ -115,10 +115,10 @@ fun waitForUrl(url: String, timeoutSeconds: Long, intervalMillis: Long) {
 }
 
 val readinessUrls = listOf(
-    System.getProperty("perf.readiness.auth", "http://localhost:8081/actuator/health"),
-    System.getProperty("perf.readiness.token", "http://localhost:8082/actuator/health"),
-    System.getProperty("perf.readiness.analytics", "http://localhost:8083/actuator/health"),
-    System.getProperty("perf.readiness.gateway", "http://localhost:8080/actuator/health")
+    System.getProperty("perf.readiness.auth", "http://localhost:8081/actuator/health/readiness"),
+    System.getProperty("perf.readiness.token", "http://localhost:8082/actuator/health/readiness"),
+    System.getProperty("perf.readiness.analytics", "http://localhost:8083/actuator/health/readiness"),
+    System.getProperty("perf.readiness.gateway", "http://localhost:8080/actuator/health/readiness")
 )
 
 tasks.register("waitForReadiness") {
