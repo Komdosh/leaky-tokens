@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.leaky.tokens.analyticsservice.metrics.AnalyticsMetrics;
+import com.leaky.tokens.analyticsservice.report.AnalyticsAnomalyResponse;
+import com.leaky.tokens.analyticsservice.report.AnalyticsReportResponse;
 import com.leaky.tokens.analyticsservice.report.AnalyticsReportService;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderKey;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRecord;
@@ -73,5 +75,69 @@ class AnalyticsControllerTest {
 
         verify(repository).findRecentByProvider(eq("openai"), eq(1));
         assertThat(response.get("count")).isEqualTo(0);
+    }
+
+    @Test
+    void reportReturnsServiceResponse() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            reportService
+        );
+
+        AnalyticsReportResponse report = new AnalyticsReportResponse(
+            "openai",
+            Instant.parse("2026-02-04T16:00:00Z"),
+            Instant.parse("2026-02-04T17:00:00Z"),
+            10,
+            8,
+            2,
+            1000,
+            100.0,
+            5,
+            200,
+            List.of(new com.leaky.tokens.analyticsservice.report.UserUsageSummary("user-1", 400, 4))
+        );
+        when(reportService.buildReport(eq("openai"), eq(60), eq(200))).thenReturn(report);
+
+        AnalyticsReportResponse response = controller.report("openai", 60, 200);
+
+        verify(reportService).buildReport(eq("openai"), eq(60), eq(200));
+        assertThat(response.getProvider()).isEqualTo("openai");
+        assertThat(response.getTotalEvents()).isEqualTo(10);
+        assertThat(response.getTopUsers()).hasSize(1);
+    }
+
+    @Test
+    void anomaliesReturnsServiceResponse() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            reportService
+        );
+
+        AnalyticsAnomalyResponse anomaly = new AnalyticsAnomalyResponse(
+            "openai",
+            Instant.parse("2026-02-04T16:00:00Z"),
+            Instant.parse("2026-02-04T17:00:00Z"),
+            4,
+            1200,
+            300.0,
+            4.0,
+            2.0,
+            true,
+            200
+        );
+        when(reportService.detectAnomaly(eq("openai"), eq(60), eq(4), eq(2.0), eq(200))).thenReturn(anomaly);
+
+        AnalyticsAnomalyResponse response = controller.anomalies("openai", 60, 4, 2.0, 200);
+
+        verify(reportService).detectAnomaly(eq("openai"), eq(60), eq(4), eq(2.0), eq(200));
+        assertThat(response.isAnomaly()).isTrue();
+        assertThat(response.getCurrentTokens()).isEqualTo(1200);
     }
 }

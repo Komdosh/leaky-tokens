@@ -132,6 +132,77 @@ class TokenControllerTest {
     }
 
     @Test
+    void consumeReturns402WhenQuotaInsufficient() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        when(tierResolver.resolveTier()).thenReturn(tier);
+        when(quotaService.reserve(
+            java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            "openai",
+            100,
+            tier
+        )).thenReturn(new TokenQuotaReservation(false, 100, 0));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                new StubTokenBucketService(TokenBucketResult.allowed(1000, 0, 0L, Instant.now())),
+                new StubProviderCallService(),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).addFilters(new RateLimitHeadersFilter(), new SecurityHeadersFilter()).build();
+
+        mockMvc.perform(
+                post("/api/v1/tokens/consume")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"provider\":\"openai\",\"tokens\":100}")
+            )
+            .andExpect(status().isPaymentRequired())
+            .andExpect(jsonPath("$.message").value("insufficient token quota"));
+    }
+
+    @Test
+    void consumeReleasesQuotaOnProviderFailure() throws Exception {
+        Instant now = Instant.parse("2026-02-03T10:00:00Z");
+        TokenBucketResult allowed = TokenBucketResult.allowed(1000, 100, 0L, now);
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        when(tierResolver.resolveTier()).thenReturn(tier);
+        when(quotaService.reserve(
+            java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            "openai",
+            100,
+            tier
+        )).thenReturn(new TokenQuotaReservation(true, 1000, 900));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(new StubTokenBucketService(allowed),
+                new FailingProviderCallService(),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver)
+        ).addFilters(new RateLimitHeadersFilter(), new SecurityHeadersFilter()).build();
+
+        mockMvc.perform(
+                post("/api/v1/tokens/consume")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"provider\":\"openai\",\"tokens\":100,\"prompt\":\"hi\"}")
+            )
+            .andExpect(status().isBadGateway())
+            .andExpect(jsonPath("$.message").value("provider call failed"));
+
+        verify(quotaService).release(
+            java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            "openai",
+            100,
+            tier
+        );
+    }
+
+    @Test
     void consumeUsesOrgQuotaWhenOrgIdProvided() throws Exception {
         Instant now = Instant.parse("2026-02-03T10:00:00Z");
         TokenBucketResult allowed = TokenBucketResult.allowed(1000, 100, 0L, now);
@@ -219,6 +290,21 @@ class TokenControllerTest {
         @Override
         public ProviderResponse call(String provider, ProviderRequest request) {
             return new ProviderResponse(provider, Map.of("message", "ok"));
+        }
+    }
+
+    private static final class FailingProviderCallService extends ProviderCallService {
+        private FailingProviderCallService() {
+            super((provider, request) -> new ProviderResponse(provider, Map.of()),
+                io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry.ofDefaults(),
+                io.github.resilience4j.retry.RetryRegistry.ofDefaults(),
+                io.github.resilience4j.bulkhead.BulkheadRegistry.ofDefaults(),
+                io.github.resilience4j.timelimiter.TimeLimiterRegistry.ofDefaults());
+        }
+
+        @Override
+        public ProviderResponse call(String provider, ProviderRequest request) {
+            throw new com.leaky.tokens.tokenservice.provider.ProviderCallException("boom");
         }
     }
 }

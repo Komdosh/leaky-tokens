@@ -26,6 +26,7 @@
 - Polished OpenAPI schemas, examples, and Swagger UI configs across services.
 - Added unit tests for analytics reporting, JWT config/service, and tier resolution.
 - Added quota service unit tests (caps, resets, org behavior).
+- Added controller tests for auth, token, and analytics APIs.
 
 ## Blocking / Known Issues
 - None currently.
