@@ -147,6 +147,15 @@ class GatewayContractTest {
         assertThat(lastAuthBody.get()).contains("\"username\":\"demo\"");
     }
 
+    @Test
+    void rejectsInvalidApiKeyAtGateway() {
+        newClient().get()
+            .uri("/api/v1/analytics/usage?provider=openai&limit=5")
+            .header("X-Api-Key", "invalid-key")
+            .exchange()
+            .expectStatus().isUnauthorized();
+    }
+
     private WebTestClient newClient() {
         return WebTestClient.bindToServer()
             .baseUrl("http://localhost:" + port)

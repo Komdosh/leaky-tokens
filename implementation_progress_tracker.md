@@ -32,6 +32,7 @@
 - Added token bucket engine and service edge-case tests.
 - Added saga controller/service edge-case tests (idempotency, flags).
 - Added analytics report clamp test and tier multiplier fallback checks.
+- Added gateway invalid key and cache-miss tests.
 
 ## Blocking / Known Issues
 - None currently.

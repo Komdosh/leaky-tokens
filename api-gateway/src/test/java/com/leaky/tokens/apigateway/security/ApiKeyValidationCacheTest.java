@@ -49,4 +49,11 @@ class ApiKeyValidationCacheTest {
         assertThat(cache.get("key-1", 120)).isEmpty();
         assertThat(cache.get("key-2", 120)).isPresent();
     }
+
+    @Test
+    void getReturnsEmptyWhenMissing() {
+        ApiKeyValidationCache cache = new ApiKeyValidationCache();
+
+        assertThat(cache.get("missing", 60)).isEmpty();
+    }
 }
