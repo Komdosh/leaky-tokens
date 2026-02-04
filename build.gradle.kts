@@ -89,3 +89,9 @@ subprojects {
         jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 }
+
+tasks.register("smokeReadiness") {
+    group = "verification"
+    description = "Ping service readiness endpoints before running performance tests"
+    dependsOn(":performance-tests:waitForReadiness")
+}
