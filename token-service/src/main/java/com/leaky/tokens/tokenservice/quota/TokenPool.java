@@ -1,6 +1,7 @@
 package com.leaky.tokens.tokenservice.quota;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -72,5 +73,18 @@ public class TokenPool {
     public void releaseTokens(long tokens, Instant now) {
         remainingTokens = Math.min(totalTokens, remainingTokens + tokens);
         updatedAt = now;
+    }
+
+    public void resetWindow(Instant now, Duration window) {
+        remainingTokens = totalTokens;
+        resetTime = now.plus(window);
+        updatedAt = now;
+    }
+
+    public void ensureResetTime(Instant now, Duration window) {
+        if (resetTime == null) {
+            resetTime = now.plus(window);
+            updatedAt = now;
+        }
     }
 }

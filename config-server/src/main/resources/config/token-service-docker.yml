@@ -19,6 +19,9 @@ spring:
 token:
   bucket:
     store: redis
+  quota:
+    enabled: true
+    window: 24h
 
 providers:
   qwen:

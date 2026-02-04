@@ -7,6 +7,9 @@ token:
     capacity: 1000
     leak-rate-per-second: 10.0
     store: in-memory
+  quota:
+    enabled: true
+    window: 24h
   usage:
     topic: token-usage
   saga:
