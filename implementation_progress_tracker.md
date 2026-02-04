@@ -2,7 +2,7 @@
 
 ## Project Status: Active Development
 
-### Overall Progress: ~60%
+### Overall Progress: ~65%
 
 ## Changelog
 
@@ -39,6 +39,13 @@
 - Added organization-level quotas (org pools + org quota endpoints).
 - Added token bucket entry expiration (TTL + cleanup job).
 - Improved gateway rate limiting (AUTO keying, per-route overrides, whitelist, cleanup).
+- Added gateway API key role propagation and stripping tests.
+- Added API key cache TTL + invalidation tests.
+- Added gateway readiness warm-up in tests to reduce flakiness.
+- Added Gatling readiness wait + summary report generation.
+- Enabled readiness probes across core services and provider stubs.
+- Fixed security headers filter to avoid premature response close.
+- Added Caffeine cache for Spring Cloud LoadBalancer.
 
 ---
 
@@ -170,9 +177,9 @@
 
 ### 2. Testing
 - [ ] Unit test coverage (>80%)
-- [ ] Integration tests
+- [x] Integration tests
 - [ ] Contract tests
-- [ ] Performance tests
+- [x] Performance tests
 
 ### 3. Documentation
 - [ ] API documentation (OpenAPI)
@@ -211,6 +218,7 @@
 2. Expand gateway rate limit tests (route overrides + whitelist)
 3. Add performance baseline reports (saved artifacts)
 4. Clean up remaining warnings (unchecked ops in provider client)
+5. Add contract tests for gateway-to-service APIs
 
 ---
 
