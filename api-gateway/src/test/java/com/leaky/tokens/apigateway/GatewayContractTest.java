@@ -47,6 +47,8 @@ class GatewayContractTest {
     private static final AtomicReference<Map<String, String>> lastTokenHeaders = new AtomicReference<>();
     private static final AtomicReference<Map<String, String>> lastAnalyticsHeaders = new AtomicReference<>();
     private static final AtomicReference<String> lastAuthApiKey = new AtomicReference<>();
+    private static final AtomicReference<Map<String, String>> lastAuthHeaders = new AtomicReference<>();
+    private static final AtomicReference<String> lastAuthBody = new AtomicReference<>();
 
     @LocalServerPort
     private int port;
@@ -128,6 +130,22 @@ class GatewayContractTest {
         assertThat(headers.get("X-User-Roles")).isEqualTo("ADMIN,USER");
     }
 
+    @Test
+    void forwardsAuthRegistrationWithoutApiKey() {
+        newClient().post()
+            .uri("/api/v1/auth/register")
+            .contentType(APPLICATION_JSON)
+            .bodyValue("{\"username\":\"demo\",\"email\":\"demo@example.com\",\"password\":\"password\"}")
+            .exchange()
+            .expectStatus().isOk();
+
+        Map<String, String> headers = lastAuthHeaders.get();
+        assertThat(headers.get("X-User-Id")).isNull();
+        assertThat(headers.get("X-User-Roles")).isNull();
+        assertThat(headers.get("X-Api-Key")).isNull();
+        assertThat(lastAuthBody.get()).contains("\"username\":\"demo\"");
+    }
+
     private WebTestClient newClient() {
         return WebTestClient.bindToServer()
             .baseUrl("http://localhost:" + port)
@@ -162,7 +180,17 @@ class GatewayContractTest {
                 .header("Content-Type", "application/json")
                 .sendString(Mono.just("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"roles\":[\"ADMIN\",\"USER\"]}"))
                 .then();
-        });
+        }).post("/api/v1/auth/register", (request, response) -> request.receive()
+            .aggregate()
+            .asString()
+            .flatMap(body -> {
+                lastAuthHeaders.set(toHeaderMap(request.requestHeaders()));
+                lastAuthBody.set(body);
+                return response.status(200)
+                    .header("Content-Type", "application/json")
+                    .sendString(Mono.just("{\"status\":\"ok\"}"))
+                    .then();
+            }));
     }
 
     private static Map<String, String> toHeaderMap(io.netty.handler.codec.http.HttpHeaders headers) {
@@ -190,12 +218,16 @@ class GatewayContractTest {
                 .route("analytics-service", route -> route
                     .path("/api/v1/analytics/**")
                     .uri("http://localhost:" + mockAnalyticsService.port()))
+                .route("auth-server", route -> route
+                    .path("/api/v1/auth/**")
+                    .uri("http://localhost:" + mockAuthService.port()))
                 .build();
         }
 
         @Bean
-        ReactiveJwtDecoder reactiveJwtDecoder() {
-            return token -> reactor.core.publisher.Mono.just(
+        @org.springframework.context.annotation.Primary
+        ReactiveJwtDecoder testReactiveJwtDecoder() {
+            return token -> Mono.just(
                 Jwt.withTokenValue(token)
                     .header("alg", "none")
                     .claim("sub", "test")
