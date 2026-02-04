@@ -33,6 +33,7 @@
 - Added saga controller/service edge-case tests (idempotency, flags).
 - Added analytics report clamp test and tier multiplier fallback checks.
 - Added gateway invalid key and cache-miss tests.
+- Added saga recovery disable-path test.
 
 ## Blocking / Known Issues
 - None currently.

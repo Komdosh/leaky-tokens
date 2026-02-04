@@ -258,6 +258,22 @@ class TokenPurchaseSagaServiceTest {
         assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED", "TOKEN_PURCHASE_COMPLETED");
     }
 
+    @Test
+    void recoverySkipsWhenDisabled() {
+        TokenPurchaseSagaRecoveryJob job = new TokenPurchaseSagaRecoveryJob(
+            sagaRepository,
+            outboxRepository,
+            new ObjectMapper(),
+            false,
+            10
+        );
+
+        job.recoverStaleSagas();
+
+        verify(sagaRepository, times(0)).findByStatusInAndUpdatedAtBefore(any(), any());
+        verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
+    }
+
     private TokenServiceFeatureFlags enabledFlags() {
         TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
         flags.setQuotaEnforcement(true);
