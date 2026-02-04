@@ -13,7 +13,6 @@ import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -21,15 +20,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
 
 import reactor.core.publisher.Mono;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @ConditionalOnProperty(prefix = "gateway.rate-limit", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class GatewayRateLimitFilter implements WebFilter {
+public class GatewayRateLimitFilter implements GlobalFilter, Ordered {
     private final GatewayRateLimitProperties properties;
     private final GatewayMetrics metrics;
     private final ConcurrentHashMap<String, WindowCounter> counters = new ConcurrentHashMap<>();
@@ -46,7 +44,7 @@ public class GatewayRateLimitFilter implements WebFilter {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         if (isWhitelisted(exchange.getRequest().getPath().value())) {
             return chain.filter(exchange);
         }
@@ -77,6 +75,11 @@ public class GatewayRateLimitFilter implements WebFilter {
 
         metrics.rateLimit("allowed");
         return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return Ordered.LOWEST_PRECEDENCE - 10;
     }
 
     @Scheduled(fixedDelayString = "${gateway.rate-limit.cleanup-interval:PT30M}")
