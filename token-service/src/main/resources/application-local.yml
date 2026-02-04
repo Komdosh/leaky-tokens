@@ -8,6 +8,18 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka}
+    registerWithEureka: ${EUREKA_REGISTER:true}
+    fetchRegistry: ${EUREKA_FETCH:true}
+
+logging:
+  level:
+    com.netflix.discovery: ERROR
+    org.springframework.cloud.netflix.eureka: ERROR
+
 # Force in-memory buckets when running local profile.
 token:
   bucket:

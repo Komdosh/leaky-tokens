@@ -23,7 +23,10 @@ public class AuthorizationServerConfig {
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/oauth2/**", "/.well-known/**")
-            .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/oauth2/jwks").permitAll()
+                .anyRequest().authenticated()
+            )
             .csrf(csrf -> csrf.disable())
             .httpBasic(Customizer.withDefaults());
         return http.build();

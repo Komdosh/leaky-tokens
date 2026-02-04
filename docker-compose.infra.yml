@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  service-discovery:
+    image: eclipse-temurin:25-jdk
+    container_name: service-discovery
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - gradle-cache:/root/.gradle
+    command: ["./gradlew", "--gradle-user-home", "/root/.gradle/service-discovery", "--project-cache-dir", "/root/.gradle/project-cache/service-discovery", ":service-discovery:bootRun"]
+    environment:
+      - GRADLE_USER_HOME=/root/.gradle/service-discovery
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+
   postgres:
     image: postgres:15-alpine
     container_name: postgres-db
@@ -76,6 +90,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  gradle-cache:
   postgres_data:
   redis_data:
   cassandra_data:

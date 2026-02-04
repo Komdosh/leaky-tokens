@@ -38,6 +38,8 @@ import reactor.netty.http.server.HttpServerResponse;
         "gateway.rate-limit.window-seconds=60",
         "gateway.rate-limit.routes.token-service.capacity=1",
         "gateway.rate-limit.routes.token-service.window-seconds=60",
+        "gateway.rate-limit.routes.analytics-service.capacity=2",
+        "gateway.rate-limit.routes.analytics-service.window-seconds=60",
         "gateway.rate-limit.whitelist-paths=/actuator/**"
     }
 )
@@ -125,17 +127,20 @@ class GatewayRateLimitTest {
             .baseUrl("http://localhost:" + port)
             .build();
 
-        webTestClient.get()
-            .uri("/actuator/health")
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody(String.class)
-            .consumeWith(result -> assertThat(result.getResponseBody()).contains("\"status\":\"UP\""));
+        for (int i = 0; i < 5; i++) {
+            EntityExchangeResult<String> result = webTestClient.get()
+                .uri("/actuator/health")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .returnResult();
 
-        webTestClient.get()
-            .uri("/actuator/health")
-            .exchange()
-            .expectStatus().isOk();
+            if (i == 0) {
+                assertThat(result.getResponseBody()).contains("\"status\":\"UP\"");
+            }
+            assertThat(result.getResponseHeaders().getFirst("X-RateLimit-Limit")).isNull();
+            assertThat(result.getResponseHeaders().getFirst("Retry-After")).isNull();
+        }
     }
 
     @Test
@@ -159,6 +164,40 @@ class GatewayRateLimitTest {
         assertThat(first.getStatus().value()).isEqualTo(200);
         assertThat(second.getStatus().value()).isEqualTo(200);
         assertThat(second.getResponseHeaders().getFirst("X-RateLimit-Limit")).isEqualTo("5");
+    }
+
+    @Test
+    void appliesAnalyticsRouteOverride() {
+        webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+
+        EntityExchangeResult<String> first = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .header("X-Api-Key", "analytics-key")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        EntityExchangeResult<String> second = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .header("X-Api-Key", "analytics-key")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        EntityExchangeResult<String> third = webTestClient.get()
+            .uri("/api/v1/analytics/usage")
+            .header("X-Api-Key", "analytics-key")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        assertThat(first.getStatus().value()).isEqualTo(200);
+        assertThat(second.getStatus().value()).isEqualTo(200);
+        assertThat(second.getResponseHeaders().getFirst("X-RateLimit-Limit")).isEqualTo("2");
+        assertThat(third.getStatus().value()).isEqualTo(429);
+        assertThat(third.getResponseHeaders().getFirst("Retry-After")).isNotBlank();
     }
 
     private static HttpServerRoutes tokenRoutes(HttpServerRoutes routes) {

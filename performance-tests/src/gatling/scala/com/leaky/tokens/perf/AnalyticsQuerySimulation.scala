@@ -11,11 +11,13 @@ class AnalyticsQuerySimulation extends Simulation {
   private val provider = System.getProperty("provider", "openai")
   private val limit = System.getProperty("limit", "10")
   private val bearerToken = System.getProperty("bearerToken", "")
+  private val apiKey = System.getProperty("apiKey", "test-key")
 
   private val httpProtocol = http
     .baseUrl(baseUrl)
     .contentTypeHeader("application/json")
     .header("Authorization", if (bearerToken.isBlank) "Bearer dummy" else s"Bearer $bearerToken")
+    .header("X-Api-Key", apiKey)
 
   private val scn = scenario("Analytics Query Baseline")
     .during(durationSeconds) {

@@ -114,11 +114,13 @@ docker-compose up
 
 ### Local Dev (Infrastructure)
 
-To boot only the databases and messaging stack, use `docker-compose.infra.yml`.
+To boot infra dependencies plus Eureka service discovery for local profiles, use `docker-compose.infra.yml`.
 
 ```bash
 docker-compose -f docker-compose.infra.yml up -d
 ```
+
+This brings up Cassandra/Postgres/Redis/Kafka/ZooKeeper and the Eureka server on `http://localhost:8761`.
 
 ### Local Dev (Full Stack)
 
