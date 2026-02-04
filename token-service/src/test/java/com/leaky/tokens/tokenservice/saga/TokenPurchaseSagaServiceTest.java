@@ -18,6 +18,7 @@ import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
+import com.leaky.tokens.tokenservice.flags.TokenServiceFeatureFlags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,7 +46,8 @@ class TokenPurchaseSagaServiceTest {
             outboxRepository,
             quotaService,
             new ObjectMapper(),
-            true
+            true,
+            enabledFlags()
         );
 
         TokenPurchaseRequest request = new TokenPurchaseRequest();
@@ -89,7 +91,8 @@ class TokenPurchaseSagaServiceTest {
             outboxRepository,
             quotaService,
             new ObjectMapper(),
-            false
+            false,
+            enabledFlags()
         );
 
         TokenPurchaseRequest request = new TokenPurchaseRequest();
@@ -117,7 +120,8 @@ class TokenPurchaseSagaServiceTest {
             outboxRepository,
             quotaService,
             new ObjectMapper(),
-            false
+            false,
+            enabledFlags()
         );
 
         TokenPurchaseRequest request = new TokenPurchaseRequest();
@@ -190,5 +194,12 @@ class TokenPurchaseSagaServiceTest {
             .map(TokenOutboxEntry::getEventType)
             .toList();
         assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED", "TOKEN_PURCHASE_COMPLETED");
+    }
+
+    private TokenServiceFeatureFlags enabledFlags() {
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setQuotaEnforcement(true);
+        flags.setSagaPurchases(true);
+        return flags;
     }
 }

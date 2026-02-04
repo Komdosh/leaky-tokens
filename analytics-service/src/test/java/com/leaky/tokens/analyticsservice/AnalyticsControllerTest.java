@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.leaky.tokens.analyticsservice.metrics.AnalyticsMetrics;
+import com.leaky.tokens.analyticsservice.report.AnalyticsReportService;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderKey;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRecord;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRepository;
@@ -21,7 +22,11 @@ class AnalyticsControllerTest {
     @Test
     void healthReturnsStatus() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
-        AnalyticsController controller = new AnalyticsController(repository, new AnalyticsMetrics(new SimpleMeterRegistry()));
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            Mockito.mock(AnalyticsReportService.class)
+        );
 
         Map<String, Object> response = controller.health();
 
@@ -32,7 +37,11 @@ class AnalyticsControllerTest {
     @Test
     void usageClampsLimitAndReturnsRecords() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
-        AnalyticsController controller = new AnalyticsController(repository, new AnalyticsMetrics(new SimpleMeterRegistry()));
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            Mockito.mock(AnalyticsReportService.class)
+        );
 
         TokenUsageByProviderKey key = new TokenUsageByProviderKey("openai", Instant.now());
         TokenUsageByProviderRecord record = new TokenUsageByProviderRecord(key, "user-1", 42, true);
@@ -52,7 +61,11 @@ class AnalyticsControllerTest {
     @Test
     void usageClampsLowLimitToOne() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
-        AnalyticsController controller = new AnalyticsController(repository, new AnalyticsMetrics(new SimpleMeterRegistry()));
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            Mockito.mock(AnalyticsReportService.class)
+        );
 
         when(repository.findRecentByProvider(eq("openai"), eq(1))).thenReturn(List.of());
 

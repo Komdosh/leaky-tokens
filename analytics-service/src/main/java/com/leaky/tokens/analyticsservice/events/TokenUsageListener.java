@@ -38,14 +38,13 @@ public class TokenUsageListener {
     public void onMessage(String payload) {
         try {
             TokenUsageEvent event = objectMapper.readValue(payload, TokenUsageEvent.class);
-            TokenUsageRecord record = new TokenUsageRecord(
-                UUID.randomUUID(),
-                event.getUserId(),
-                event.getProvider(),
-                event.getTokens(),
-                event.isAllowed(),
-                event.getTimestamp()
-            );
+            TokenUsageRecord record = new TokenUsageRecord();
+            record.setId(UUID.randomUUID());
+            record.setUserId(event.getUserId());
+            record.setProvider(event.getProvider());
+            record.setTokens(event.getTokens());
+            record.setAllowed(event.isAllowed());
+            record.setTimestamp(event.getTimestamp());
             repository.save(record);
 
             TokenUsageByProviderKey key = new TokenUsageByProviderKey(event.getProvider(), event.getTimestamp());

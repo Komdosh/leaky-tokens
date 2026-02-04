@@ -2,7 +2,7 @@
 
 ## Project Status
 - Active development
-- Overall progress: ~80%
+- Overall progress: ~85%
 
 ## Current State (2026-02-04)
 ### Core Capabilities (Done)
@@ -28,9 +28,9 @@
 - None currently.
 
 ## Next Actions (Priority Order)
-1. Document tier/org quota usage (API examples).
-2. Clean up remaining warnings (unchecked ops in provider client).
-3. Add/expand contract tests for gateway-to-service APIs.
+1. Clean up remaining warnings (unchecked ops in provider client).
+2. Add/expand contract tests for gateway-to-service APIs.
+3. Documentation: OpenAPI + deployment/ops guides.
 
 ## Quick Feature Checklist
 - API gateway routing + security + rate limiting: done
@@ -52,12 +52,11 @@
 
 ### In Progress / Needs Finalization
 - Testing coverage: unit tests >80%, remaining contract tests
-- Documentation: API docs (OpenAPI + examples), deployment/ops guides
+- Documentation: API docs (OpenAPI), deployment/ops guides
 - Production readiness: performance tuning, container optimization, CI/CD pipeline
-
-### Not Started / Minimal
 
 ### Completed (recently)
 - Feature flags + dynamic configuration validation
 - Advanced reporting/anomaly detection
 - Backup & recovery procedures
+- Tier/org quota usage examples
