@@ -3,9 +3,12 @@ package com.leaky.tokens.tokenservice.bucket;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.leaky.tokens.tokenservice.events.TokenUsageEvent;
 import com.leaky.tokens.tokenservice.events.TokenUsageEventFactory;
 import com.leaky.tokens.tokenservice.events.TokenUsagePublisher;
+import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import org.junit.jupiter.api.Test;
 
 class TokenBucketServiceTest {
@@ -25,5 +28,49 @@ class TokenBucketServiceTest {
 
         TokenBucketState state = store.load(new TokenBucketKey("user-1", "openai"), Instant.now());
         assertThat(state.getCurrentTokens()).isEqualTo(5);
+    }
+
+    @Test
+    void consumePublishesUsageEvent() {
+        TokenBucketProperties properties = new TokenBucketProperties();
+        properties.setCapacity(10);
+        properties.setLeakRatePerSecond(1.0);
+
+        InMemoryTokenBucketStore store = new InMemoryTokenBucketStore();
+        AtomicReference<TokenUsageEvent> eventRef = new AtomicReference<>();
+        TokenUsagePublisher publisher = eventRef::set;
+        TokenUsageEventFactory eventFactory = new TokenUsageEventFactory();
+        TokenBucketService service = new TokenBucketService(properties, store, publisher, eventFactory);
+
+        TokenBucketResult result = service.consume("user-2", "openai", 3);
+
+        assertThat(result.isAllowed()).isTrue();
+        TokenUsageEvent event = eventRef.get();
+        assertThat(event).isNotNull();
+        assertThat(event.getUserId()).isEqualTo("user-2");
+        assertThat(event.getProvider()).isEqualTo("openai");
+        assertThat(event.getTokens()).isEqualTo(3);
+        assertThat(event.isAllowed()).isTrue();
+    }
+
+    @Test
+    void consumeWithTierScalesCapacity() {
+        TokenBucketProperties properties = new TokenBucketProperties();
+        properties.setCapacity(10);
+        properties.setLeakRatePerSecond(1.0);
+
+        InMemoryTokenBucketStore store = new InMemoryTokenBucketStore();
+        TokenUsagePublisher publisher = event -> { };
+        TokenUsageEventFactory eventFactory = new TokenUsageEventFactory();
+        TokenBucketService service = new TokenBucketService(properties, store, publisher, eventFactory);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setBucketCapacityMultiplier(2.0);
+        tier.setBucketLeakRateMultiplier(0.5);
+
+        TokenBucketResult result = service.consume("user-3", "openai", 5, tier);
+
+        assertThat(result.getCapacity()).isEqualTo(20);
+        assertThat(result.getUsed()).isEqualTo(5);
     }
 }

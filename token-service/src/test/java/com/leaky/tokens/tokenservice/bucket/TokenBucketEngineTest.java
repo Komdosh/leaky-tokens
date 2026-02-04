@@ -72,4 +72,57 @@ class TokenBucketEngineTest {
         TokenBucketResult allowed = engine.tryConsume(state, properties, 2, t2);
         assertThat(allowed.isAllowed()).isTrue();
     }
+
+    @Test
+    void leakyBucketWaitsIndefinitelyWhenLeakRateZero() {
+        TokenBucketEngine engine = new TokenBucketEngine();
+        TokenBucketProperties properties = new TokenBucketProperties();
+        properties.setStrategy(TokenBucketStrategy.LEAKY_BUCKET);
+        properties.setCapacity(10);
+        properties.setLeakRatePerSecond(0.0);
+
+        TokenBucketState state = new TokenBucketState(10L, Instant.parse("2026-02-03T10:00:00Z"));
+        TokenBucketResult denied = engine.tryConsume(state, properties, 1, Instant.parse("2026-02-03T10:00:01Z"));
+
+        assertThat(denied.isAllowed()).isFalse();
+        assertThat(denied.getWaitSeconds()).isEqualTo(Long.MAX_VALUE);
+    }
+
+    @Test
+    void fixedWindowNormalizesZeroWindowSeconds() {
+        TokenBucketEngine engine = new TokenBucketEngine();
+        TokenBucketProperties properties = new TokenBucketProperties();
+        properties.setStrategy(TokenBucketStrategy.FIXED_WINDOW);
+        properties.setCapacity(2);
+        properties.setWindowSeconds(0);
+
+        TokenBucketState state = new TokenBucketState(0L, null);
+        Instant t0 = Instant.parse("2026-02-03T10:00:00Z");
+        TokenBucketResult first = engine.tryConsume(state, properties, 2, t0);
+        assertThat(first.isAllowed()).isTrue();
+
+        Instant t1 = Instant.parse("2026-02-03T10:00:00Z");
+        TokenBucketResult denied = engine.tryConsume(state, properties, 1, t1);
+        assertThat(denied.isAllowed()).isFalse();
+
+        Instant t2 = Instant.parse("2026-02-03T10:00:01Z");
+        TokenBucketResult afterReset = engine.tryConsume(state, properties, 1, t2);
+        assertThat(afterReset.isAllowed()).isTrue();
+    }
+
+    @Test
+    void tokenBucketRefillsOnFirstUse() {
+        TokenBucketEngine engine = new TokenBucketEngine();
+        TokenBucketProperties properties = new TokenBucketProperties();
+        properties.setStrategy(TokenBucketStrategy.TOKEN_BUCKET);
+        properties.setCapacity(5);
+        properties.setLeakRatePerSecond(1.0);
+
+        TokenBucketState state = new TokenBucketState(0L, null);
+        TokenBucketResult result = engine.tryConsume(state, properties, 2, Instant.parse("2026-02-03T10:00:00Z"));
+
+        assertThat(result.isAllowed()).isTrue();
+        assertThat(result.getCapacity()).isEqualTo(5);
+        assertThat(result.getUsed()).isEqualTo(2);
+    }
 }
