@@ -121,6 +121,48 @@ val readinessUrls = listOf(
     System.getProperty("perf.readiness.gateway", "http://localhost:8080/actuator/health/readiness")
 )
 
+fun extractInt(json: String, key: String): Int? {
+    val match = Regex("\"$key\"\\s*:\\s*(\\d+)").find(json)
+    return match?.groupValues?.get(1)?.toIntOrNull()
+}
+
+fun extractString(json: String, key: String): String? {
+    val match = Regex("\"$key\"\\s*:\\s*\"([^\"]+)\"").find(json)
+    return match?.groupValues?.get(1)
+}
+
+fun extractIntByRegex(json: String, pattern: String): Int? {
+    val match = Regex(pattern).find(json)
+    return match?.groupValues?.get(1)?.toIntOrNull()
+}
+
+data class GatlingSummary(
+    val simulation: String,
+    val total: Int,
+    val ok: Int,
+    val ko: Int,
+    val min: Int?,
+    val max: Int?,
+    val p50: Int?,
+    val p75: Int?,
+    val p95: Int?,
+    val p99: Int?
+)
+
+fun parseSummary(statsJson: String, fallbackName: String): GatlingSummary? {
+    val simulationName = extractString(statsJson, "name") ?: fallbackName
+    val total = extractIntByRegex(statsJson, "\"numberOfRequests\"\\s*:\\s*\\{[^}]*\"total\"\\s*:\\s*(\\d+)") ?: return null
+    val ok = extractIntByRegex(statsJson, "\"numberOfRequests\"\\s*:\\s*\\{[^}]*\"ok\"\\s*:\\s*(\\d+)") ?: 0
+    val ko = extractIntByRegex(statsJson, "\"numberOfRequests\"\\s*:\\s*\\{[^}]*\"ko\"\\s*:\\s*(\\d+)") ?: 0
+    val min = extractInt(statsJson, "minResponseTime")
+    val max = extractInt(statsJson, "maxResponseTime")
+    val p50 = extractInt(statsJson, "percentiles1")
+    val p75 = extractInt(statsJson, "percentiles2")
+    val p95 = extractInt(statsJson, "percentiles3")
+    val p99 = extractInt(statsJson, "percentiles4")
+    return GatlingSummary(simulationName, total, ok, ko, min, max, p50, p75, p95, p99)
+}
+
 tasks.register("waitForReadiness") {
     group = "gatling"
     description = "Wait for dependent services to be ready before running Gatling"
@@ -134,8 +176,61 @@ tasks.register("waitForReadiness") {
     }
 }
 
+tasks.register("summarizeGatlingReports") {
+    group = "gatling"
+    description = "Summarize latest Gatling report stats into a markdown file"
+    doLast {
+        val reportsDir = layout.buildDirectory.dir("reports/gatling").get().asFile
+        if (!reportsDir.exists()) {
+            throw GradleException("No Gatling reports found at ${reportsDir.absolutePath}")
+        }
+        val statsFiles = reportsDir.walkTopDown()
+            .filter { it.isFile && it.name == "stats.json" }
+            .toList()
+        if (statsFiles.isEmpty()) {
+            throw GradleException("No Gatling stats.json files found under ${reportsDir.absolutePath}")
+        }
+
+        val latestBySimulation = statsFiles
+            .groupBy { file ->
+                file.parentFile.name.substringBeforeLast("-")
+            }
+            .mapValues { (_, files) ->
+                files.maxByOrNull { it.lastModified() }
+            }
+            .values
+            .filterNotNull()
+
+        val summaries = latestBySimulation.mapNotNull { file ->
+            val json = file.readText()
+            parseSummary(json, file.parentFile.name)
+        }.sortedBy { it.simulation }
+
+        val summaryDir = reportsDir.resolve("summary")
+        summaryDir.mkdirs()
+        val timestamp = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss'Z'"))
+        val output = summaryDir.resolve("summary-$timestamp.md")
+
+        val lines = mutableListOf<String>()
+        lines += "# Gatling Summary"
+        lines += ""
+        lines += "Generated: $timestamp"
+        lines += ""
+        lines += "| Simulation | Total | OK | KO | Min (ms) | Max (ms) | P50 | P75 | P95 | P99 |"
+        lines += "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+        summaries.forEach { summary ->
+            lines += "| ${summary.simulation} | ${summary.total} | ${summary.ok} | ${summary.ko} | ${summary.min ?: "-"} | ${summary.max ?: "-"} | ${summary.p50 ?: "-"} | ${summary.p75 ?: "-"} | ${summary.p95 ?: "-"} | ${summary.p99 ?: "-"} |"
+        }
+
+        output.writeText(lines.joinToString("\n"))
+        logger.lifecycle("Wrote Gatling summary: ${output.absolutePath}")
+    }
+}
+
 tasks.register("runGatlingAll") {
     group = "gatling"
     description = "Run all Gatling simulations sequentially"
     dependsOn("waitForReadiness", runAnalytics, runAuth, runConsume, runPurchase, runQuota, runUsage)
+    finalizedBy("summarizeGatlingReports")
 }
