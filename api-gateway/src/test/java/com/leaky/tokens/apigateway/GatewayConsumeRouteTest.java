@@ -120,6 +120,10 @@ class GatewayConsumeRouteTest {
             }
         } catch (Exception ignored) {
         }
+        newClient().get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus().isOk();
     }
 
     @Test
