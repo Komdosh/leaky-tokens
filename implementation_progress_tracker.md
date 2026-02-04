@@ -2,7 +2,7 @@
 
 ## Project Status
 - Active development
-- Overall progress: ~85%
+- Overall progress: ~88%
 
 ## Current State (2026-02-04)
 ### Core Capabilities (Done)
@@ -29,9 +29,8 @@
 - None currently.
 
 ## Next Actions (Priority Order)
-1. Clean up remaining warnings (unchecked ops in provider client).
-2. Production readiness: performance tuning, container optimization, CI/CD pipeline.
-3. Testing coverage: unit tests >80%, remaining contract tests.
+1. Production readiness: performance tuning, container optimization, CI/CD pipeline.
+2. Testing coverage: unit tests >80%, remaining contract tests.
 
 ## Quick Feature Checklist
 - API gateway routing + security + rate limiting: done
