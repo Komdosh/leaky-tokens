@@ -83,11 +83,20 @@ public class TokenPurchaseSagaService {
             return new TokenPurchaseResponse(saga.getId(), saga.getStatus(), saga.getCreatedAt());
         }
 
-        if (orgId == null) {
-            quotaService.addTokens(userId, request.getProvider(), request.getTokens(), tier);
-        } else {
-            quotaService.addOrgTokens(orgId, request.getProvider(), request.getTokens(), tier);
+        try {
+            if (orgId == null) {
+                quotaService.addTokens(userId, request.getProvider(), request.getTokens(), tier);
+            } else {
+                quotaService.addOrgTokens(orgId, request.getProvider(), request.getTokens(), tier);
+            }
+        } catch (Exception ex) {
+            saga.setStatus(TokenPurchaseSagaStatus.FAILED);
+            sagaRepository.save(saga);
+            emitEvent(saga, "TOKEN_PURCHASE_FAILED");
+            emitCompensation(saga, "PAYMENT_RELEASE_REQUESTED");
+            return new TokenPurchaseResponse(saga.getId(), saga.getStatus(), saga.getCreatedAt());
         }
+
         saga.setStatus(TokenPurchaseSagaStatus.TOKENS_ALLOCATED);
         sagaRepository.save(saga);
         emitEvent(saga, "TOKEN_ALLOCATED");

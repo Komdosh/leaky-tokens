@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 import java.util.List;
 import java.util.Optional;
@@ -101,5 +102,38 @@ class TokenPurchaseSagaServiceTest {
         assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
         verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
         verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
+    }
+
+    @Test
+    void marksSagaFailedWhenQuotaAllocationThrows() {
+        when(sagaRepository.save(any(TokenPurchaseSaga.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(outboxRepository.save(any(TokenOutboxEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new RuntimeException("quota down"))
+            .when(quotaService).addTokens(any(), any(), anyLong(), any());
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("openai");
+        request.setTokens(10);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, null);
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+
+        ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
+        verify(outboxRepository, times(4)).save(outboxCaptor.capture());
+        List<String> eventTypes = outboxCaptor.getAllValues().stream()
+            .map(TokenOutboxEntry::getEventType)
+            .toList();
+        assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED");
     }
 }
