@@ -29,8 +29,8 @@
 
 ## Next Actions (Priority Order)
 1. Clean up remaining warnings (unchecked ops in provider client).
-2. Add/expand contract tests for gateway-to-service APIs.
-3. Documentation: OpenAPI + deployment/ops guides.
+2. Documentation: OpenAPI + deployment/ops guides.
+3. Production readiness: performance tuning, container optimization, CI/CD pipeline.
 
 ## Quick Feature Checklist
 - API gateway routing + security + rate limiting: done
@@ -60,3 +60,4 @@
 - Advanced reporting/anomaly detection
 - Backup & recovery procedures
 - Tier/org quota usage examples
+- Expanded gateway contract tests (auth passthrough)
