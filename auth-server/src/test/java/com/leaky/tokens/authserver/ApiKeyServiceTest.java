@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.List;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import com.leaky.tokens.authserver.domain.ApiKey;
 import com.leaky.tokens.authserver.domain.Role;
 import com.leaky.tokens.authserver.domain.UserAccount;
 import com.leaky.tokens.authserver.dto.ApiKeyCreateRequest;
+import com.leaky.tokens.authserver.dto.ApiKeySummary;
 import com.leaky.tokens.authserver.dto.ApiKeyValidationResponse;
 import com.leaky.tokens.authserver.metrics.AuthMetrics;
 import com.leaky.tokens.authserver.repo.ApiKeyRepository;
@@ -101,6 +103,52 @@ class ApiKeyServiceTest {
         assertThatThrownBy(() -> service.validate(rawKey))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("api key expired");
+    }
+
+    @Test
+    void validateRejectsMissingKey() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        assertThatThrownBy(() -> service.validate(" "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("api key is required");
+    }
+
+    @Test
+    void listReturnsSummaries() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        UUID userId = UUID.randomUUID();
+        ApiKey apiKey = new ApiKey(UUID.randomUUID(), userId, "hashed", "cli", Instant.now(), null);
+        when(apiKeyRepository.findByUserId(eq(userId))).thenReturn(List.of(apiKey));
+
+        List<ApiKeySummary> summaries = service.list(userId);
+
+        assertThat(summaries).hasSize(1);
+        assertThat(summaries.get(0).name()).isEqualTo("cli");
+    }
+
+    @Test
+    void revokeDeletesKey() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        UUID userId = UUID.randomUUID();
+        UUID keyId = UUID.randomUUID();
+        ApiKey apiKey = new ApiKey(keyId, userId, "hashed", "cli", Instant.now(), null);
+        when(apiKeyRepository.findByIdAndUserId(eq(keyId), eq(userId))).thenReturn(Optional.of(apiKey));
+
+        service.revoke(userId, keyId);
+
+        verify(apiKeyRepository).delete(eq(apiKey));
     }
 
     private String hash(String rawKey) throws Exception {

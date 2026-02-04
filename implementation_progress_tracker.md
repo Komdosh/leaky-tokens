@@ -28,6 +28,7 @@
 - Added quota service unit tests (caps, resets, org behavior).
 - Added controller tests for auth, token, and analytics APIs.
 - Added gateway cache and rate limit edge-case tests.
+- Added auth/api-key edge case tests and analytics anomaly clamp coverage.
 
 ## Blocking / Known Issues
 - None currently.

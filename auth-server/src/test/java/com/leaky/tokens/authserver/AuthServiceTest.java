@@ -128,4 +128,47 @@ class AuthServiceTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("username already exists");
     }
+
+    @Test
+    void registerRejectsDuplicateEmail() {
+        UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
+        RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
+        PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        JwtService jwtService = Mockito.mock(JwtService.class);
+
+        when(userRepository.findByUsername(eq("alice"))).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(eq("alice@example.com"))).thenReturn(Optional.of(
+            new UserAccount(UUID.randomUUID(), "bob", "alice@example.com", "hashed")
+        ));
+
+        AuthService authService = new AuthService(userRepository, roleRepository, passwordEncoder, jwtService);
+
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername("alice");
+        request.setEmail("alice@example.com");
+        request.setPassword("secret");
+
+        assertThatThrownBy(() -> authService.register(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("email already exists");
+    }
+
+    @Test
+    void registerRejectsMissingFields() {
+        UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
+        RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
+        PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        JwtService jwtService = Mockito.mock(JwtService.class);
+
+        AuthService authService = new AuthService(userRepository, roleRepository, passwordEncoder, jwtService);
+
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername("alice");
+        request.setEmail("alice@example.com");
+        request.setPassword(" ");
+
+        assertThatThrownBy(() -> authService.register(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("username, email, and password are required");
+    }
 }
