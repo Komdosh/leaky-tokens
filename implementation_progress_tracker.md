@@ -23,14 +23,15 @@
 - Added feature flags and configuration validation for gateway + token-service.
 - Added analytics reporting + anomaly detection endpoints with configurable windows.
 - Added backup & recovery procedures for Postgres/Cassandra/Redis.
+- Polished OpenAPI schemas, examples, and Swagger UI configs across services.
 
 ## Blocking / Known Issues
 - None currently.
 
 ## Next Actions (Priority Order)
 1. Clean up remaining warnings (unchecked ops in provider client).
-2. Documentation: OpenAPI + deployment/ops guides.
-3. Production readiness: performance tuning, container optimization, CI/CD pipeline.
+2. Production readiness: performance tuning, container optimization, CI/CD pipeline.
+3. Testing coverage: unit tests >80%, remaining contract tests.
 
 ## Quick Feature Checklist
 - API gateway routing + security + rate limiting: done
@@ -52,7 +53,6 @@
 
 ### In Progress / Needs Finalization
 - Testing coverage: unit tests >80%, remaining contract tests
-- Documentation: API docs (OpenAPI), deployment/ops guides
 - Production readiness: performance tuning, container optimization, CI/CD pipeline
 
 ### Completed (recently)
@@ -61,3 +61,5 @@
 - Backup & recovery procedures
 - Tier/org quota usage examples
 - Expanded gateway contract tests (auth passthrough)
+- Deployment/ops guide
+- OpenAPI documentation + Swagger UI polish

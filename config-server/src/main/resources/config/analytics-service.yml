@@ -15,6 +15,13 @@ analytics:
     default-baseline-windows: 4
     default-anomaly-threshold-multiplier: 2.0
 
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+  paths-to-exclude:
+    - /actuator/**
+
 spring:
   security:
     oauth2:

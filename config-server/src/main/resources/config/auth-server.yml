@@ -6,3 +6,10 @@ auth:
   jwt:
     issuer: leaky-tokens-auth
     expiry-seconds: 3600
+
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+  paths-to-exclude:
+    - /actuator/**

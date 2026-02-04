@@ -78,3 +78,10 @@ resilience4j:
       providerCalls:
         timeoutDuration: 2s
         cancelRunningFuture: true
+
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+  paths-to-exclude:
+    - /actuator/**

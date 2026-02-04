@@ -30,6 +30,13 @@ gateway:
     cache-ttl-seconds: 120
     cache-max-size: 10000
 
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+  paths-to-exclude:
+    - /actuator/**
+
 feature:
   flags:
     gateway:

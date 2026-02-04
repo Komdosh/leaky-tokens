@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.data.cassandra.core.cql.Ordering;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyClass;
@@ -12,9 +13,11 @@ import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 @PrimaryKeyClass
 public class TokenUsageByProviderKey implements Serializable {
     @PrimaryKeyColumn(name = "provider", type = PrimaryKeyType.PARTITIONED, ordinal = 0)
+    @Schema(example = "openai")
     private String provider;
 
     @PrimaryKeyColumn(name = "timestamp", type = PrimaryKeyType.CLUSTERED, ordering = Ordering.DESCENDING, ordinal = 1)
+    @Schema(example = "2026-02-04T16:59:00Z")
     private Instant timestamp;
 
     public TokenUsageByProviderKey() {
