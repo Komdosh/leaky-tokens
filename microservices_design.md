@@ -271,6 +271,29 @@ Implements the core token management and rate limiting functionality using the l
 - `/api/v1/rate-limits/{user}` - User rate limit info
 - `/actuator/**` - Health and metrics
 
+#### Tier & Organization Quotas
+- **Tiered quotas**: Derived from JWT roles (`USER`, `ADMIN`) and mapped to tier configs in
+  `token.tiers` (capacity/leak multipliers + quota caps).
+- **Organization quotas**: Optional `orgId` shared pool. If `orgId` is provided, org-level quotas
+  are applied instead of per-user quotas.
+
+**Examples**
+
+```
+POST /api/v1/tokens/consume
+{
+  "userId": "00000000-0000-0000-0000-000000000001",
+  "orgId": "10000000-0000-0000-0000-000000000001",
+  "provider": "openai",
+  "tokens": 25,
+  "prompt": "hello"
+}
+```
+
+```
+GET /api/v1/tokens/quota/org?orgId=10000000-0000-0000-0000-000000000001&provider=openai
+```
+
 #### Configuration Properties
 ```yaml
 server:
