@@ -1,6 +1,13 @@
 server:
   port: 8082
 
+token:
+  saga:
+    recovery:
+      enabled: true
+      stale-minutes: 10
+      fixed-delay-ms: 60000
+
 spring:
   application:
     name: token-service

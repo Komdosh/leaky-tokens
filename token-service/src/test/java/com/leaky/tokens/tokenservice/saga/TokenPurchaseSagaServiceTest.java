@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doThrow;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import tools.jackson.databind.ObjectMapper;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
@@ -135,5 +136,59 @@ class TokenPurchaseSagaServiceTest {
             .map(TokenOutboxEntry::getEventType)
             .toList();
         assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED");
+    }
+
+    @Test
+    void recoveryMarksStaleSagas() {
+        TokenPurchaseSaga started = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            null,
+            "openai",
+            5,
+            TokenPurchaseSagaStatus.STARTED
+        );
+        TokenPurchaseSaga paymentReserved = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000002"),
+            null,
+            "openai",
+            5,
+            TokenPurchaseSagaStatus.PAYMENT_RESERVED
+        );
+        TokenPurchaseSaga allocated = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000003"),
+            null,
+            "openai",
+            5,
+            TokenPurchaseSagaStatus.TOKENS_ALLOCATED
+        );
+
+        when(sagaRepository.findByStatusInAndUpdatedAtBefore(any(), any()))
+            .thenReturn(List.of(started, paymentReserved, allocated));
+        when(sagaRepository.save(any(TokenPurchaseSaga.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(outboxRepository.save(any(TokenOutboxEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenPurchaseSagaRecoveryJob job = new TokenPurchaseSagaRecoveryJob(
+            sagaRepository,
+            outboxRepository,
+            new ObjectMapper(),
+            true,
+            10
+        );
+
+        job.recoverStaleSagas();
+
+        assertThat(started.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        assertThat(paymentReserved.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        assertThat(allocated.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+
+        ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
+        verify(outboxRepository, times(5)).save(outboxCaptor.capture());
+        List<String> eventTypes = outboxCaptor.getAllValues().stream()
+            .map(TokenOutboxEntry::getEventType)
+            .toList();
+        assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED", "TOKEN_PURCHASE_COMPLETED");
     }
 }
