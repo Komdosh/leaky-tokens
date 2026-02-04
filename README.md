@@ -31,6 +31,8 @@ various paid token-based services like Qwen API, Gemini API, and OpenAI API thro
 - **Microservices Architecture**: 5+ interconnected services with service discovery
 - **Token Management**: Leaky bucket algorithm implementation for rate limiting
 - **Token Quotas**: Persistent per-user/provider token pools with reservation and release
+- **Organization Quotas**: Optional shared org-level token pools for multi-tenant usage
+- **Priority Tiers**: Role-based tiering (e.g., USER/ADMIN) for quota caps and rate limits
 - **Advanced Rate Limiting**: Leaky bucket, fixed window, and token bucket strategies
 - **Service Mesh**: Circuit breaker and resilience patterns
 - **Data Storage**: PostgreSQL, Redis, and Apache Cassandra integration
@@ -250,6 +252,50 @@ curl -s -X POST http://localhost:8080/api/v1/tokens/consume \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: <your-api-key>" \
   -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":100}' | jq
+```
+
+### Tiered Quotas (USER/ADMIN)
+
+Tiers are resolved from JWT roles and can override quota caps and rate limits.
+Defaults are configured in `config-server/src/main/resources/config/token-service*.yml` under `token.tiers`.
+
+Example (config excerpt):
+
+```
+token:
+  tiers:
+    default-tier: USER
+    levels:
+      USER:
+        priority: 10
+        bucket-capacity-multiplier: 1.0
+        bucket-leak-rate-multiplier: 1.0
+        quota-max-tokens: 100000
+      ADMIN:
+        priority: 100
+        bucket-capacity-multiplier: 2.0
+        bucket-leak-rate-multiplier: 2.0
+        quota-max-tokens: 500000
+```
+
+### Organization Quotas
+
+If `orgId` is provided, the token service applies org-level quotas instead of user-level quotas.
+You can also query org quotas directly.
+
+```bash
+# Consume using org quota
+curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"00000000-0000-0000-0000-000000000001","orgId":"10000000-0000-0000-0000-000000000001","provider":"openai","tokens":25}' | jq
+
+# Org quota lookup
+curl -s "http://localhost:8082/api/v1/tokens/quota/org?orgId=10000000-0000-0000-0000-000000000001&provider=openai" | jq
+
+# Purchase tokens into an org pool (saga)
+curl -s -X POST http://localhost:8082/api/v1/tokens/purchase \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"00000000-0000-0000-0000-000000000001","orgId":"10000000-0000-0000-0000-000000000001","provider":"openai","tokens":1000}' | jq
 ```
 
 ### Rate Limiting Strategies
