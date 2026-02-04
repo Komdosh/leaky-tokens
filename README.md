@@ -278,6 +278,10 @@ open http://localhost:8083/swagger-ui/index.html
 curl -s http://localhost:8083/v3/api-docs | jq
 ```
 
+### Deployment & Ops
+
+See `docs/deployment_ops.md` for Docker compose usage, health checks, logs, and troubleshooting.
+
 ### Tiered Quotas (USER/ADMIN)
 
 Tiers are resolved from JWT roles and can override quota caps and rate limits.
