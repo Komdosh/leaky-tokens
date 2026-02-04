@@ -4,3 +4,20 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: http://auth-server:8081/oauth2/jwks
+
+gateway:
+  rate-limit:
+    enabled: true
+    capacity: 120
+    window-seconds: 60
+    key-strategy: AUTO
+    header-name: X-Api-Key
+    user-header-name: X-User-Id
+    counter-ttl: 6h
+    cleanup-interval: 30m
+    whitelist-paths:
+      - /actuator/**
+    routes:
+      token-service:
+        capacity: 200
+        window-seconds: 60

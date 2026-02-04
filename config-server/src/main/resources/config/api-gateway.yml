@@ -104,9 +104,17 @@ gateway:
     enabled: true
     capacity: 120
     window-seconds: 60
-    key-strategy: IP
+    key-strategy: AUTO
     header-name: X-Api-Key
     user-header-name: X-User-Id
+    counter-ttl: 6h
+    cleanup-interval: 30m
+    whitelist-paths:
+      - /actuator/**
+    routes:
+      token-service:
+        capacity: 200
+        window-seconds: 60
   api-key:
     enabled: true
     header-name: X-Api-Key
