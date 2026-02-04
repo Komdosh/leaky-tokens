@@ -2,7 +2,6 @@ package com.leaky.tokens.analyticsservice.events;
 
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderKey;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRecord;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRepository;
@@ -12,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class TokenUsageListener {

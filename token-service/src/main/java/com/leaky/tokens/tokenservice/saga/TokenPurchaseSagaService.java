@@ -3,14 +3,14 @@ package com.leaky.tokens.tokenservice.saga;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class TokenPurchaseSagaService {
@@ -93,7 +93,7 @@ public class TokenPurchaseSagaService {
     private String toJson(TokenPurchaseSaga saga) {
         try {
             return objectMapper.writeValueAsString(saga);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to serialize saga", e);
         }
     }

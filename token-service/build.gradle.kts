@@ -30,8 +30,8 @@ dependencies {
     // Redis
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
-    // JSON for Redis serialization
-    implementation("com.fasterxml.jackson.core:jackson-databind")
+    // Jackson 3 (tools.jackson) for Redis serialization and outbox payloads
+    implementation("tools.jackson.core:jackson-databind")
     
     // Kafka
     implementation("org.springframework.kafka:spring-kafka")
