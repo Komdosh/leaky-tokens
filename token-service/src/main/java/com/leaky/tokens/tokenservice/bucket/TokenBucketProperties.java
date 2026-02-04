@@ -12,4 +12,6 @@ public class TokenBucketProperties {
     private double leakRatePerSecond = 10.0;
     private long windowSeconds = 60;
     private TokenBucketStrategy strategy = TokenBucketStrategy.LEAKY_BUCKET;
+    private java.time.Duration entryTtl = java.time.Duration.ofHours(6);
+    private java.time.Duration cleanupInterval = java.time.Duration.ofMinutes(30);
 }

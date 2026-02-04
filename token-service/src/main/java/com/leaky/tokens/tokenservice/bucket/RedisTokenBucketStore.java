@@ -10,9 +10,12 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "token.bucket", name = "store", havingValue = "redis")
 public class RedisTokenBucketStore implements TokenBucketStore {
     private final RedisTemplate<String, TokenBucketState> redisTemplate;
+    private final TokenBucketProperties properties;
 
-    public RedisTokenBucketStore(RedisTemplate<String, TokenBucketState> redisTemplate) {
+    public RedisTokenBucketStore(RedisTemplate<String, TokenBucketState> redisTemplate,
+                                 TokenBucketProperties properties) {
         this.redisTemplate = redisTemplate;
+        this.properties = properties;
     }
 
     @Override
@@ -21,14 +24,23 @@ public class RedisTokenBucketStore implements TokenBucketStore {
         TokenBucketState state = redisTemplate.opsForValue().get(redisKey);
         if (state == null) {
             state = new TokenBucketState(0L, now);
-            redisTemplate.opsForValue().set(redisKey, state);
+            set(redisKey, state);
         }
         return state;
     }
 
     @Override
     public void save(TokenBucketKey key, TokenBucketState state) {
-        redisTemplate.opsForValue().set(toRedisKey(key), state);
+        set(toRedisKey(key), state);
+    }
+
+    private void set(String redisKey, TokenBucketState state) {
+        java.time.Duration ttl = properties.getEntryTtl();
+        if (ttl != null && !ttl.isZero() && !ttl.isNegative()) {
+            redisTemplate.opsForValue().set(redisKey, state, ttl);
+        } else {
+            redisTemplate.opsForValue().set(redisKey, state);
+        }
     }
 
     private String toRedisKey(TokenBucketKey key) {

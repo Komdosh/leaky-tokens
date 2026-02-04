@@ -19,6 +19,8 @@ spring:
 token:
   bucket:
     store: redis
+    entry-ttl: 6h
+    cleanup-interval: 30m
   quota:
     enabled: true
     window: 24h

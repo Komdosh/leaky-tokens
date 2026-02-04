@@ -7,6 +7,8 @@ token:
     capacity: 1000
     leak-rate-per-second: 10.0
     store: in-memory
+    entry-ttl: 6h
+    cleanup-interval: 30m
   quota:
     enabled: true
     window: 24h
