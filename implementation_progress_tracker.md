@@ -2,7 +2,7 @@
 
 ## Project Status
 - Active development
-- Overall progress: ~70%
+- Overall progress: ~80%
 
 ## Current State (2026-02-04)
 ### Core Capabilities (Done)
@@ -22,6 +22,7 @@
 - Local profile parity: Eureka + local configs, local analytics security bypass, Cassandra local defaults.
 - Added feature flags and configuration validation for gateway + token-service.
 - Added analytics reporting + anomaly detection endpoints with configurable windows.
+- Added backup & recovery procedures for Postgres/Cassandra/Redis.
 
 ## Blocking / Known Issues
 - None currently.
@@ -55,8 +56,8 @@
 - Production readiness: performance tuning, container optimization, CI/CD pipeline
 
 ### Not Started / Minimal
-- Backup & recovery procedures
 
 ### Completed (recently)
 - Feature flags + dynamic configuration validation
 - Advanced reporting/anomaly detection
+- Backup & recovery procedures
