@@ -1,3 +1,13 @@
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+
 plugins {
     id("io.gatling.gradle") version "3.11.5"
     scala
@@ -89,19 +99,19 @@ val runUsage = registerGatlingRunTask(
 )
 
 fun waitForUrl(url: String, timeoutSeconds: Long, intervalMillis: Long) {
-    val client = java.net.http.HttpClient.newBuilder()
-        .connectTimeout(java.time.Duration.ofSeconds(5))
+    val client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(5))
         .build()
-    val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(timeoutSeconds)
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds)
     var lastError: String? = null
     while (System.nanoTime() < deadline) {
         try {
-            val request = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(url))
-                .timeout(java.time.Duration.ofSeconds(5))
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(5))
                 .GET()
                 .build()
-            val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.discarding())
+            val response = client.send(request, HttpResponse.BodyHandlers.discarding())
             if (response.statusCode() in 200..299) {
                 return
             }
@@ -208,8 +218,8 @@ tasks.register("summarizeGatlingReports") {
 
         val summaryDir = reportsDir.resolve("summary")
         summaryDir.mkdirs()
-        val timestamp = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
-            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss'Z'"))
+        val timestamp = ZonedDateTime.now(ZoneOffset.UTC)
+            .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss'Z'"))
         val output = summaryDir.resolve("summary-$timestamp.md")
 
         val lines = mutableListOf<String>()

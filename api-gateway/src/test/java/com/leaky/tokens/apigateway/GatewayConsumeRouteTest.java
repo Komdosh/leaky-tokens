@@ -210,6 +210,27 @@ class GatewayConsumeRouteTest {
         assertThat(result.getResponseBody()).contains("\"service\":\"analytics-service\"");
     }
 
+    @Test
+    void propagatesUserHeadersAndStripsApiKey() {
+        webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+
+        EntityExchangeResult<String> result = webTestClient.get()
+            .uri("/api/v1/tokens/headers")
+            .header("X-Api-Key", "valid-key")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        assertThat(result.getStatus().value())
+            .withFailMessage("Expected 200 but got %s. Body: %s", result.getStatus(), result.getResponseBody())
+            .isEqualTo(200);
+        assertThat(result.getResponseBody()).contains("\"userId\":\"00000000-0000-0000-0000-000000000001\"");
+        assertThat(result.getResponseBody()).contains("\"roles\":\"ADMIN,USER\"");
+        assertThat(result.getResponseBody()).contains("\"apiKeyPresent\":false");
+    }
+
     private static HttpServerRoutes routes(HttpServerRoutes routes) {
         return routes.post("/api/v1/tokens/consume", (request, response) -> {
             String failHeader = request.requestHeaders().get("X-Trigger-Fail");
@@ -218,6 +239,15 @@ class GatewayConsumeRouteTest {
             }
             String userId = request.requestHeaders().get("X-User-Id");
             return respondOk(response, userId);
+        }).get("/api/v1/tokens/headers", (request, response) -> {
+            String userId = request.requestHeaders().get("X-User-Id");
+            String roles = request.requestHeaders().get("X-User-Roles");
+            boolean apiKeyPresent = request.requestHeaders().contains("X-Api-Key");
+            String payload = "{\"userId\":\"" + userId + "\",\"roles\":\"" + roles + "\",\"apiKeyPresent\":" + apiKeyPresent + "}";
+            return response.status(200)
+                .header("Content-Type", "application/json")
+                .sendString(Mono.just(payload))
+                .then();
         });
     }
 
@@ -247,7 +277,7 @@ class GatewayConsumeRouteTest {
             }
             return response.status(200)
                 .header("Content-Type", "application/json")
-                .sendString(Mono.just("{\"userId\":\"00000000-0000-0000-0000-000000000001\"}"))
+                .sendString(Mono.just("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"roles\":[\"ADMIN\",\"USER\"]}"))
                 .then();
         });
     }
