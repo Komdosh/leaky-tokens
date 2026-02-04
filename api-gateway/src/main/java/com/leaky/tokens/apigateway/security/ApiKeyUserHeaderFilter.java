@@ -1,10 +1,12 @@
 package com.leaky.tokens.apigateway.security;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -22,9 +24,9 @@ public class ApiKeyUserHeaderFilter implements WebFilter {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    public @NonNull Mono<Void> filter(@NonNull ServerWebExchange exchange, WebFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
-            .map(context -> context.getAuthentication())
+            .map(SecurityContext::getAuthentication)
             .flatMap(authentication -> chain.filter(maybeAddUserHeader(exchange, authentication)))
             .switchIfEmpty(chain.filter(exchange));
     }

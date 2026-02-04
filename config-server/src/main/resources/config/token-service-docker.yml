@@ -40,6 +40,12 @@ token:
         bucket-leak-rate-multiplier: 2.0
         quota-max-tokens: 500000
 
+feature:
+  flags:
+    token-service:
+      quota-enforcement: true
+      saga-purchases: true
+
 providers:
   qwen:
     base-url: http://qwen-stub:8091

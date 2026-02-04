@@ -49,8 +49,8 @@ class AuthServiceTest {
 
         AuthResponse response = authService.register(request);
 
-        assertThat(response.getUsername()).isEqualTo("alice");
-        assertThat(response.getRoles()).containsExactly("USER");
+        assertThat(response.username()).isEqualTo("alice");
+        assertThat(response.roles()).containsExactly("USER");
 
         ArgumentCaptor<UserAccount> userCaptor = ArgumentCaptor.forClass(UserAccount.class);
         verify(userRepository).save(userCaptor.capture());
@@ -80,7 +80,7 @@ class AuthServiceTest {
 
         AuthResponse response = authService.login(request);
 
-        assertThat(response.getRoles()).containsExactly("USER");
+        assertThat(response.roles()).containsExactly("USER");
         verify(userRepository).save(any(UserAccount.class));
     }
 

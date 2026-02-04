@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.Optional;
 
+import com.leaky.tokens.tokenservice.flags.TokenServiceFeatureFlags;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
@@ -22,21 +23,27 @@ public class TokenPurchaseSagaService {
     private final TokenQuotaService quotaService;
     private final ObjectMapper objectMapper;
     private final boolean simulateFailure;
+    private final TokenServiceFeatureFlags featureFlags;
 
     public TokenPurchaseSagaService(TokenPurchaseSagaRepository sagaRepository,
                                    TokenOutboxRepository outboxRepository,
                                    TokenQuotaService quotaService,
                                    ObjectMapper objectMapper,
-                                   @Value("${token.saga.simulate-failure:false}") boolean simulateFailure) {
+                                   @Value("${token.saga.simulate-failure:false}") boolean simulateFailure,
+                                   TokenServiceFeatureFlags featureFlags) {
         this.sagaRepository = sagaRepository;
         this.outboxRepository = outboxRepository;
         this.quotaService = quotaService;
         this.objectMapper = objectMapper;
         this.simulateFailure = simulateFailure;
+        this.featureFlags = featureFlags;
     }
 
     @Transactional
     public TokenPurchaseResponse start(TokenPurchaseRequest request, TokenTierProperties.TierConfig tier, String idempotencyKey) {
+        if (!featureFlags.isSagaPurchases()) {
+            throw new IllegalStateException("Token purchase saga disabled by feature flag");
+        }
         UUID userId = UUID.fromString(request.getUserId());
         UUID orgId = request.getOrgId() == null || request.getOrgId().isBlank()
             ? null

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.leaky.tokens.apigateway.flags.GatewayFeatureFlags;
 import com.leaky.tokens.apigateway.metrics.GatewayMetrics;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
@@ -30,13 +31,17 @@ import reactor.core.publisher.Mono;
 public class GatewayRateLimitFilter implements GlobalFilter, Ordered {
     private final GatewayRateLimitProperties properties;
     private final GatewayMetrics metrics;
+    private final GatewayFeatureFlags featureFlags;
     private final ConcurrentHashMap<String, WindowCounter> counters = new ConcurrentHashMap<>();
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final List<String> whitelistPatterns = new ArrayList<>();
 
-    public GatewayRateLimitFilter(GatewayRateLimitProperties properties, GatewayMetrics metrics) {
+    public GatewayRateLimitFilter(GatewayRateLimitProperties properties,
+                                  GatewayMetrics metrics,
+                                  GatewayFeatureFlags featureFlags) {
         this.properties = properties;
         this.metrics = metrics;
+        this.featureFlags = featureFlags;
         List<String> whitelist = properties.getWhitelistPaths();
         if (whitelist != null) {
             whitelistPatterns.addAll(whitelist);
@@ -45,6 +50,9 @@ public class GatewayRateLimitFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        if (!featureFlags.isRateLimiting()) {
+            return chain.filter(exchange);
+        }
         if (isWhitelisted(exchange.getRequest().getPath().value())) {
             return chain.filter(exchange);
         }

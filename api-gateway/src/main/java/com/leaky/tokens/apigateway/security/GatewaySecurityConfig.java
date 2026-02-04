@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import com.leaky.tokens.apigateway.metrics.GatewayMetrics;
+import com.leaky.tokens.apigateway.flags.GatewayFeatureFlags;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -29,8 +30,9 @@ public class GatewaySecurityConfig {
                                                            GatewaySecurityProperties securityProperties,
                                                            ApiKeyValidationCache cache,
                                                            GatewayMetrics metrics,
+                                                           GatewayFeatureFlags featureFlags,
                                                            WebClient.Builder webClientBuilder) {
-        if (apiKeyProperties.isEnabled()) {
+        if (apiKeyProperties.isEnabled() && featureFlags.isApiKeyValidation()) {
             AuthenticationWebFilter apiKeyFilter = new AuthenticationWebFilter(
                 new ApiKeyAuthenticationManager(webClientBuilder, apiKeyProperties, cache, metrics)
             );

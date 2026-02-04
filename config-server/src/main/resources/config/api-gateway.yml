@@ -124,6 +124,12 @@ gateway:
     cache-ttl-seconds: 120
     cache-max-size: 10000
 
+feature:
+  flags:
+    gateway:
+      rate-limiting: true
+      api-key-validation: true
+
 resilience4j:
   circuitbreaker:
     instances:

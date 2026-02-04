@@ -30,6 +30,12 @@ token:
   saga:
     simulate-failure: false
 
+feature:
+  flags:
+    token-service:
+      quota-enforcement: true
+      saga-purchases: true
+
 providers:
   qwen:
     base-url: http://localhost:8091

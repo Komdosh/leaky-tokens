@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.leaky.tokens.authserver.domain.ApiKey;
+import com.leaky.tokens.authserver.domain.Role;
 import com.leaky.tokens.authserver.domain.UserAccount;
 import com.leaky.tokens.authserver.dto.ApiKeyCreateRequest;
 import com.leaky.tokens.authserver.dto.ApiKeyResponse;
@@ -86,7 +87,7 @@ public class ApiKeyService {
             throw new IllegalArgumentException("api key expired");
         }
         List<String> roles = userAccountRepository.findById(apiKey.getUserId())
-            .map(user -> user.getRoles().stream().map(role -> role.getName()).sorted().toList())
+            .map(user -> user.getRoles().stream().map(Role::getName).sorted().toList())
             .orElseGet(List::of);
         metrics.apiKeyValidateSuccess();
         return new ApiKeyValidationResponse(apiKey.getUserId(), apiKey.getName(), apiKey.getExpiresAt(), roles);

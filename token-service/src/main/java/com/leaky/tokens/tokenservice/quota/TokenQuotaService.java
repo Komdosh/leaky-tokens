@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.leaky.tokens.tokenservice.flags.TokenServiceFeatureFlags;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +15,16 @@ public class TokenQuotaService {
     private final TokenPoolRepository repository;
     private final OrgTokenPoolRepository orgRepository;
     private final TokenQuotaProperties properties;
+    private final TokenServiceFeatureFlags featureFlags;
 
     public TokenQuotaService(TokenPoolRepository repository,
                              OrgTokenPoolRepository orgRepository,
-                             TokenQuotaProperties properties) {
+                             TokenQuotaProperties properties,
+                             TokenServiceFeatureFlags featureFlags) {
         this.repository = repository;
         this.orgRepository = orgRepository;
         this.properties = properties;
+        this.featureFlags = featureFlags;
     }
 
     public Optional<TokenPool> getQuota(UUID userId, String provider, TokenTierProperties.TierConfig tier) {
@@ -38,6 +42,11 @@ public class TokenQuotaService {
     @Transactional
     public TokenQuotaReservation reserve(UUID userId, String provider, long tokens, TokenTierProperties.TierConfig tier) {
         TokenPool pool = repository.findForUpdate(userId, provider).orElse(null);
+        if (!featureFlags.isQuotaEnforcement()) {
+            return new TokenQuotaReservation(true,
+                pool == null ? 0 : pool.getTotalTokens(),
+                pool == null ? Long.MAX_VALUE : pool.getRemainingTokens());
+        }
         if (pool == null) {
             return new TokenQuotaReservation(false, 0, 0);
         }
@@ -81,6 +90,11 @@ public class TokenQuotaService {
     @Transactional
     public TokenQuotaReservation reserveOrg(UUID orgId, String provider, long tokens, TokenTierProperties.TierConfig tier) {
         OrgTokenPool pool = orgRepository.findForUpdate(orgId, provider).orElse(null);
+        if (!featureFlags.isQuotaEnforcement()) {
+            return new TokenQuotaReservation(true,
+                pool == null ? 0 : pool.getTotalTokens(),
+                pool == null ? Long.MAX_VALUE : pool.getRemainingTokens());
+        }
         if (pool == null) {
             return new TokenQuotaReservation(false, 0, 0);
         }
@@ -122,7 +136,7 @@ public class TokenQuotaService {
     }
 
     private void applyResetIfNeeded(TokenPool pool, TokenTierProperties.TierConfig tier, Instant now) {
-        if (!properties.isEnabled()) {
+        if (!properties.isEnabled() || !featureFlags.isQuotaEnforcement()) {
             return;
         }
         Duration window = properties.getWindow();
@@ -155,7 +169,7 @@ public class TokenQuotaService {
     }
 
     private void applyResetIfNeeded(OrgTokenPool pool, TokenTierProperties.TierConfig tier, Instant now) {
-        if (!properties.isEnabled()) {
+        if (!properties.isEnabled() || !featureFlags.isQuotaEnforcement()) {
             return;
         }
         Duration window = properties.getWindow();
@@ -188,7 +202,7 @@ public class TokenQuotaService {
     }
 
     private void ensureResetTime(TokenPool pool, Instant now) {
-        if (!properties.isEnabled()) {
+        if (!properties.isEnabled() || !featureFlags.isQuotaEnforcement()) {
             return;
         }
         Duration window = properties.getWindow();
@@ -199,7 +213,7 @@ public class TokenQuotaService {
     }
 
     private void ensureResetTime(OrgTokenPool pool, Instant now) {
-        if (!properties.isEnabled()) {
+        if (!properties.isEnabled() || !featureFlags.isQuotaEnforcement()) {
             return;
         }
         Duration window = properties.getWindow();
@@ -210,7 +224,7 @@ public class TokenQuotaService {
     }
 
     private Instant nextResetTime(Instant now) {
-        if (!properties.isEnabled()) {
+        if (!properties.isEnabled() || !featureFlags.isQuotaEnforcement()) {
             return null;
         }
         Duration window = properties.getWindow();

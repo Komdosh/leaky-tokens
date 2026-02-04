@@ -20,6 +20,7 @@ dependencies {
 
     // OAuth2 Resource Server (JWT)
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
 
     // Spring Data JPA
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")

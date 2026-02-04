@@ -45,8 +45,8 @@ class ApiKeyServiceTest {
 
         var response = service.create(request);
 
-        assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getApiKey()).startsWith("leaky_" + userId + "_");
+        assertThat(response.userId()).isEqualTo(userId);
+        assertThat(response.apiKey()).startsWith("leaky_" + userId + "_");
 
         ArgumentCaptor<ApiKey> captor = ArgumentCaptor.forClass(ApiKey.class);
         verify(apiKeyRepository).save(captor.capture());
@@ -73,8 +73,8 @@ class ApiKeyServiceTest {
 
         ApiKeyValidationResponse response = service.validate(rawKey);
 
-        assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getRoles()).containsExactly("USER");
+        assertThat(response.userId()).isEqualTo(userId);
+        assertThat(response.roles()).containsExactly("USER");
     }
 
     @Test
