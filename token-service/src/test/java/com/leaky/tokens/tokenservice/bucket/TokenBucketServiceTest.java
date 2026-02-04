@@ -73,4 +73,25 @@ class TokenBucketServiceTest {
         assertThat(result.getCapacity()).isEqualTo(20);
         assertThat(result.getUsed()).isEqualTo(5);
     }
+
+    @Test
+    void consumeWithInvalidTierMultipliersFallsBackToBase() {
+        TokenBucketProperties properties = new TokenBucketProperties();
+        properties.setCapacity(10);
+        properties.setLeakRatePerSecond(1.0);
+
+        InMemoryTokenBucketStore store = new InMemoryTokenBucketStore();
+        TokenUsagePublisher publisher = event -> { };
+        TokenUsageEventFactory eventFactory = new TokenUsageEventFactory();
+        TokenBucketService service = new TokenBucketService(properties, store, publisher, eventFactory);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setBucketCapacityMultiplier(0.0);
+        tier.setBucketLeakRateMultiplier(-1.0);
+
+        TokenBucketResult result = service.consume("user-4", "openai", 5, tier);
+
+        assertThat(result.getCapacity()).isEqualTo(10);
+        assertThat(result.getUsed()).isEqualTo(5);
+    }
 }

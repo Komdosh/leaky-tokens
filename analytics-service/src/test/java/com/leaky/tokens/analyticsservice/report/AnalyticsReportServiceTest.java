@@ -3,6 +3,7 @@ package com.leaky.tokens.analyticsservice.report;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
@@ -116,6 +117,24 @@ class AnalyticsReportServiceTest {
         AnalyticsAnomalyResponse response = service.detectAnomaly("openai", 60, 1, 0.2, 100);
 
         assertThat(response.getThresholdMultiplier()).isEqualTo(1.0);
+    }
+
+    @Test
+    void buildReportClampsWindowAndUsesMaxLimit() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportProperties properties = new AnalyticsReportProperties();
+        properties.setDefaultWindowMinutes(60);
+        properties.setMaxWindowMinutes(120);
+        properties.setMaxLimit(50);
+
+        when(repository.findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(50)))
+            .thenReturn(List.of());
+
+        AnalyticsReportService service = new AnalyticsReportService(repository, properties);
+        AnalyticsReportResponse response = service.buildReport("openai", 500, null);
+
+        assertThat(response.getSampleLimit()).isEqualTo(50);
+        verify(repository).findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(50));
     }
 
     private static TokenUsageByProviderRecord record(String provider, String userId, long tokens, boolean allowed) {
