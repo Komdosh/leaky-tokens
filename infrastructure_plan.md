@@ -21,7 +21,6 @@ The infrastructure consists of the following components:
 - **Redis** - Caching and session store
 - **Apache Kafka** - Message broker
 - **Apache Cassandra** - Time-series data store
-- **Zookeeper** - Kafka dependency
 
 ### Monitoring Services
 - **Prometheus** - Metrics collection
@@ -128,35 +127,23 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # Apache Zookeeper
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
-    networks:
-      - leaky-tokens-net
-    restart: unless-stopped
-
   # Apache Kafka
   kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka-broker
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    depends_on:
-      - zookeeper
-    networks:
-      - leaky-tokens-net
-    restart: unless-stopped
+     image: confluentinc/cp-kafka:latest
+     container_name: kafka-broker
+     ports:
+        - "9092:9092"
+     environment:
+        KAFKA_PROCESS_ROLES: "broker,controller"
+        KAFKA_NODE_ID: 1
+        KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+        KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+        KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+        KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+        KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+     networks:
+        - leaky-tokens-net
+     restart: unless-stopped
 
   # Apache Cassandra
   cassandra:
@@ -627,7 +614,6 @@ The services will start in the following order to ensure proper dependencies:
 1. **Infrastructure Services**:
    - PostgreSQL
    - Redis
-   - Zookeeper
    - Kafka
    - Cassandra
 

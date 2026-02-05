@@ -11,7 +11,11 @@ dependencies {
     
     // Eureka Discovery Client
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
-    
+
+    // Load balancer cache (Caffeine)
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("com.github.ben-manes.caffeine:caffeine")
+
     // Actuator for health checks
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-prometheus")

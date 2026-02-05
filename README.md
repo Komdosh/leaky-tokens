@@ -120,7 +120,7 @@ To boot infra dependencies plus Eureka service discovery for local profiles, use
 docker-compose -f docker-compose.infra.yml up -d
 ```
 
-This brings up Cassandra/Postgres/Redis/Kafka/ZooKeeper and the Eureka server on `http://localhost:8761`.
+This brings up Cassandra/Postgres/Redis/Kafka and the Eureka server on `http://localhost:8761`.
 
 ### Local Dev (Full Stack)
 
@@ -446,12 +446,15 @@ Additional simulations:
 
 ## Documentation
 
-- [Feature List](feature_list.md) - Detailed features to implement
 - [Architecture Overview](architecture_overview.md) - System design and architecture
 - [Microservices Design](microservices_design.md) - Individual service specifications
 - [Infrastructure Plan](infrastructure_plan.md) - Docker Compose and monitoring setup
-- [Progress Tracker](implementation_progress_tracker.md) - Development progress tracking
 
-## License
+Step-by-Step:
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- [Overview](docs/01-overview.md)
+- [Getting Started](docs/02-getting-started.md)
+- [User Guide](docs/03-user-guide.md) and [API Reference](docs/08-api-reference.md)
+- [Configuration Guide](docs/06-configuration.md)
+- [Monitoring & Observability](docs/07-monitoring.md)
+- [Troubleshooting](docs/09-troubleshooting.md)
