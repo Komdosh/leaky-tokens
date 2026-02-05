@@ -39,6 +39,7 @@
 - Added API key authentication manager tests (cache hit/miss/failure).
 - Added analytics controller null-param coverage and non-list roles handling.
 - Added gateway JWT decoder guard and quota cap boundary tests.
+- Added config-server and service-discovery tests (context + security headers).
 
 ## Blocking / Known Issues
 - None currently.
