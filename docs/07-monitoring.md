@@ -269,53 +269,132 @@ Default credentials: admin/admin
 
 ### Pre-configured Dashboards
 
-#### 1. System Overview Dashboard
+We provide **4 comprehensive dashboards** tailored for the Leaky Tokens platform:
 
-**Panels:**
-- Service Health Status
-- Request Rate (RPM)
-- Error Rate (%)
-- P95 Latency (ms)
-- Active Connections
-- JVM Memory Usage
+| Dashboard | Focus | Audience | Key Metrics |
+|-----------|-------|----------|-------------|
+| 🚀 Executive Overview | Platform health | Executives, Managers | RPS, tokens consumed, latency, errors |
+| 💼 Business Metrics | Token operations | Product Managers, Analysts | Consumption, quotas, SAGA, providers |
+| 🛡️ Gateway & Security | Auth & rate limiting | Security Teams | API keys, validation, blocks |
+| ⚙️ System Health | Infrastructure | DevOps, SREs | JVM, DB, GC, threads |
 
-#### 2. Token Service Dashboard
+#### 1. 🚀 Executive Overview
 
-**Panels:**
-- Token Consumption Rate
-- Quota Status by User
-- Rate Limit Hits
-- SAGA State Distribution
-- Outbox Queue Depth
-- Provider Call Latency
+High-level platform overview for stakeholders:
 
-**PromQL Examples:**
+**Key Metrics:**
+- Total requests per minute
+- Tokens consumed per minute
+- Average latency (p95)
+- Error rates
+- Rate limiting activity
+- Active users
+
+**Visualizations:**
+- Service request rates (time series)
+- Response latency percentiles
+- Token consumption by provider (donut chart)
+- Consumption outcomes (bar gauge)
+- JVM heap usage (gauge)
+- Latency heatmap
+- Top API endpoints table
+
+#### 2. 💼 Business Metrics
+
+Business-focused metrics for understanding token usage:
+
+**Key Metrics:**
+- Total tokens consumed (24h)
+- Successful consumptions
+- Denied requests (quota insufficient)
+- Rate limited requests
+- Provider failures
+- SAGA purchase completions
+
+**Visualizations:**
+- Token consumption by provider (time series)
+- Consumption outcomes over time (stacked area)
+- Provider distribution (pie chart)
+- Quota lookup activity
+- Top users by consumption (table)
+- SAGA purchase activity
+- Provider success rates
+- Hourly consumption patterns
+
+**Use Case:** Product analytics, billing verification, user behavior analysis
+
+#### 3. 🛡️ Gateway & Security
+
+Authentication and rate limiting insights:
+
+**Key Metrics:**
+- API key validations per minute
+- Validation success rate
+- Cache hit rate
+- Rate limit blocks
+- Auth registrations and logins
+
+**Visualizations:**
+- API key validation results (success/failure)
+- Cache performance (hits/misses)
+- Rate limiting activity (allowed/blocked)
+- Auth activity breakdown (donut chart)
+- Auth failures by reason
+- Gateway latency heatmap
+- API key operations over time
+
+**Key Queries:**
 ```promql
-# Token consumption by provider
-sum by (provider) (rate(token_consumption_total[5m]))
+# API key validation success rate
+sum(rate(gateway_api_key_validation_total{outcome="success"}[5m])) 
+  / sum(rate(gateway_api_key_validation_total[5m]))
 
-# SAGA state distribution
-saga_states{status="COMPLETED"}
-saga_states{status="FAILED"}
+# Cache hit rate
+sum(rate(gateway_api_key_cache_total{outcome="hit"}[5m])) 
+  / sum(rate(gateway_api_key_cache_total[5m]))
 ```
 
-#### 3. Analytics Dashboard
+#### 4. ⚙️ System Health
 
-**Panels:**
-- Events Ingestion Rate
-- Cassandra Query Latency
-- Anomaly Detection Alerts
-- Top Users by Token Consumption
-- Usage Trends (24h)
+Infrastructure and JVM monitoring:
 
-#### 4. API Gateway Dashboard
+**Key Metrics:**
+- Services up count
+- Heap memory usage
+- Database connections
+- Thread count
+- Garbage collection time
+- CPU load
+- System uptime
 
-**Panels:**
-- Requests per Second
-- Rate Limit Hits by Key
-- Circuit Breaker State
-- Authentication Success/Failure
-- Response Time Distribution
+**Visualizations:**
+- JVM heap memory by service (time series)
+- Database connection pool (active/idle/max)
+- JVM threads (live/peak)
+- Garbage collection activity
+- Heap usage gauges
+- JVM classes loaded
+- System load averages
+- Service status overview table
+
+**Key Queries:**
+```promql
+# Average heap usage
+avg(jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"})
+
+# GC time per minute
+sum(rate(jvm_gc_pause_seconds_sum[1m]))
+```
+
+### Dashboard Features
+
+All dashboards include:
+- **Auto-refresh**: 10-second intervals
+- **Template variables**: Filter by service, provider, time range
+- **Color coding**: Green/Yellow/Red thresholds
+- **Tooltips**: Detailed information on hover
+- **Time picker**: Adjust time ranges easily
+- **Export**: JSON model for backup/version control
 
 ### Creating Custom Dashboards
 

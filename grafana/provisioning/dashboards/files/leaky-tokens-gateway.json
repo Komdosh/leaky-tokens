@@ -1,0 +1,286 @@
+{
+  "uid": "leaky-tokens-gateway",
+  "title": "🛡️ Leaky Tokens - Gateway & Security",
+  "tags": ["leaky-tokens", "gateway", "security", "auth"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "description": "API Gateway metrics: authentication, rate limiting, and security monitoring",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "🔑 API Key Validations/min",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_api_key_validation_total[1m]))",
+          "legendFormat": "Validations/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "✅ Validation Success %",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 0.8},
+              {"color": "green", "value": 0.95}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_api_key_validation_total{outcome=\"success\"}[5m])) / sum(rate(gateway_api_key_validation_total[5m]))",
+          "legendFormat": "Success %"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "💾 Cache Hit Rate",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              {"color": "yellow", "value": null},
+              {"color": "green", "value": 0.7}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_api_key_cache_total{outcome=\"hit\"}[5m])) / sum(rate(gateway_api_key_cache_total[5m]))",
+          "legendFormat": "Hit Rate"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🚦 Rate Limit Blocks/min",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 10}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_rate_limit_total{outcome=\"blocked\"}[1m]))",
+          "legendFormat": "Blocked/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🚪 Auth Registrations",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(auth_register_total{outcome=\"success\"}[1m]))",
+          "legendFormat": "Success/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🔐 Auth Logins",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(auth_login_total{outcome=\"success\"}[1m]))",
+          "legendFormat": "Success/min"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🔑 API Key Validation Results",
+      "gridPos": {"x": 0, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(gateway_api_key_validation_total[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "💾 API Key Cache Performance",
+      "gridPos": {"x": 12, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(gateway_api_key_cache_total[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🚦 Rate Limiting Activity",
+      "gridPos": {"x": 0, "y": 9, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(gateway_rate_limit_total[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "🔐 Auth Activity Breakdown",
+      "gridPos": {"x": 12, "y": 9, "w": 6, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"},
+        "pieType": "donut"
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(auth_login_total[5m]))",
+          "legendFormat": "Login {{outcome}}"
+        },
+        {
+          "expr": "sum by (outcome) (rate(auth_register_total[5m]))",
+          "legendFormat": "Register {{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "⚠️ Auth Failures by Reason",
+      "gridPos": {"x": 18, "y": 9, "w": 6, "h": 6},
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate(auth_login_total{outcome=\"failure\"}[5m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "🔥 Gateway Latency Distribution",
+      "gridPos": {"x": 0, "y": 15, "w": 12, "h": 6},
+      "dataFormat": "tsbuckets",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_bucket{application=\"api-gateway\"}[5m])) by (le)",
+          "format": "heatmap",
+          "legendFormat": "{{le}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "📊 API Key Operations",
+      "gridPos": {"x": 12, "y": 15, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(auth_api_key_create_total[1m]))",
+          "legendFormat": "Created/min"
+        },
+        {
+          "expr": "sum(rate(auth_api_key_validate_total[1m]))",
+          "legendFormat": "Validated/min"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "🔴 Recent Auth Failures",
+      "gridPos": {"x": 0, "y": 21, "w": 12, "h": 6},
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "expr": "sum by (reason) (increase(auth_login_total{outcome=\"failure\"}[1h]))",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "⚡ Rate Limit Ratio",
+      "gridPos": {"x": 12, "y": 21, "w": 12, "h": 6},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_rate_limit_total{outcome=\"blocked\"}[5m])) / sum(rate(gateway_rate_limit_total[5m]))",
+          "legendFormat": "Block Rate"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "auth_outcome",
+        "type": "query",
+        "query": "label_values(auth_login_total, outcome)",
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  }
+}

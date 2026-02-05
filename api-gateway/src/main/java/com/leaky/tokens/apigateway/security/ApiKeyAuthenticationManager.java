@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import com.leaky.tokens.apigateway.metrics.GatewayMetrics;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -48,7 +49,7 @@ public class ApiKeyAuthenticationManager implements ReactiveAuthenticationManage
             .uri("/api/v1/auth/api-keys/validate")
             .header(properties.getHeaderName(), apiKey)
             .retrieve()
-            .onStatus(status -> status.isError(), response -> {
+            .onStatus(HttpStatusCode::isError, _ -> {
                 metrics.apiKeyValidation("failure");
                 return Mono.error(new BadCredentialsException("invalid api key"));
             })

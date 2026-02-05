@@ -5,7 +5,6 @@ services:
     ports:
       - "9090:9090"
     volumes:
-#      - ./config-server/src/main/resources/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./config-server/src/main/resources/config/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - ./config-server/src/main/resources/config/prometheus/prometheus-develop.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -14,6 +13,12 @@ services:
       - '--storage.tsdb.path=/prometheus'
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9090 && echo -e 'GET /-/healthy HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   grafana:
@@ -28,8 +33,16 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
-      - prometheus
-      - alertmanager
+      prometheus:
+        condition: service_healthy
+      alertmanager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/3000 && echo -e 'GET /api/health HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   alertmanager:
@@ -41,6 +54,12 @@ services:
       - ./config-server/src/main/resources/config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9093 && echo -e 'GET /-/healthy HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
 volumes:

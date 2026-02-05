@@ -1,5 +1,6 @@
 package com.leaky.tokens.apigateway.security;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -13,7 +14,7 @@ public class ApiKeyAuthenticationConverter implements ServerAuthenticationConver
     }
 
     @Override
-    public Mono<org.springframework.security.core.Authentication> convert(ServerWebExchange exchange) {
+    public @NonNull Mono<org.springframework.security.core.Authentication> convert(ServerWebExchange exchange) {
         String apiKey = exchange.getRequest().getHeaders().getFirst(properties.getHeaderName());
         if (apiKey == null || apiKey.isBlank()) {
             return Mono.empty();

@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.leaky.tokens.apigateway.flags.GatewayFeatureFlags;
 import com.leaky.tokens.apigateway.metrics.GatewayMetrics;
+import org.jspecify.annotations.NonNull;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -49,7 +50,7 @@ public class GatewayRateLimitFilter implements GlobalFilter, Ordered {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public @NonNull Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
         if (!featureFlags.isRateLimiting()) {
             return chain.filter(exchange);
         }

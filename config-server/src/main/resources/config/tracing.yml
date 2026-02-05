@@ -1,0 +1,35 @@
+# 🕵️ Tracing Configuration
+# 
+# This configuration enables distributed tracing via Jaeger/OTLP.
+# Import this profile to enable tracing in any service.
+#
+# Usage:
+#   SPRING_PROFILES_ACTIVE=tracing
+#   OR
+#   spring.profiles.include: tracing
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0  # Sample 100% of requests (adjust for production)
+  otlp:
+    metrics:
+      export:
+        enabled: false  # We use Prometheus for metrics
+    tracing:
+      endpoint: http://localhost:4318/v1/traces  # Default, override in docker-compose
+      timeout: 10s
+      compression: gzip
+      
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    io.opentelemetry: INFO
+    io.micrometer.tracing: INFO
+
+# Enable tracing for specific web clients and templates
+spring:
+  codec:
+    log-request-details: true

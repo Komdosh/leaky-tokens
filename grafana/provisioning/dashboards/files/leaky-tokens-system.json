@@ -1,0 +1,345 @@
+{
+  "uid": "leaky-tokens-system",
+  "title": "⚙️ Leaky Tokens - System Health",
+  "tags": ["leaky-tokens", "system", "health", "performance"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "description": "System-level metrics: JVM, database connections, garbage collection, and resource usage",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "🖥️ Services Up",
+      "gridPos": {"x": 0, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 5},
+              {"color": "green", "value": 9}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(up)",
+          "legendFormat": "Services"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "💾 Avg Heap Usage",
+      "gridPos": {"x": 3, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.7},
+              {"color": "red", "value": 0.85}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"})",
+          "legendFormat": "Heap %"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🗄️ DB Connections Active",
+      "gridPos": {"x": 6, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(jdbc_connections_active)",
+          "legendFormat": "Connections"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🧵 Avg Thread Count",
+      "gridPos": {"x": 9, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "avg(jvm_threads_live_threads)",
+          "legendFormat": "Threads"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🗑️ GC Time/min",
+      "gridPos": {"x": 12, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(jvm_gc_pause_seconds_sum[1m]))",
+          "legendFormat": "GC Time"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "⚡ CPU Load",
+      "gridPos": {"x": 15, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(system_cpu_usage)",
+          "legendFormat": "CPU %"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "📊 Load Average",
+      "gridPos": {"x": 18, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "avg(system_load_average_1m)",
+          "legendFormat": "Load 1m"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🟢 Uptime",
+      "gridPos": {"x": 21, "y": 0, "w": 3, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations"
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(process_uptime_seconds)",
+          "legendFormat": "Uptime"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "💾 JVM Heap Memory by Service",
+      "gridPos": {"x": 0, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {"lineWidth": 2}
+        }
+      },
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{area=\"heap\"}",
+          "legendFormat": "{{application}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🗄️ Database Connection Pool",
+      "gridPos": {"x": 12, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "jdbc_connections_active",
+          "legendFormat": "{{application}} - Active"
+        },
+        {
+          "expr": "jdbc_connections_idle",
+          "legendFormat": "{{application}} - Idle"
+        },
+        {
+          "expr": "jdbc_connections_max",
+          "legendFormat": "{{application}} - Max"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🧵 JVM Threads",
+      "gridPos": {"x": 0, "y": 9, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads",
+          "legendFormat": "{{application}} - Live"
+        },
+        {
+          "expr": "jvm_threads_peak_threads",
+          "legendFormat": "{{application}} - Peak"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🗑️ Garbage Collection Activity",
+      "gridPos": {"x": 12, "y": 9, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_sum[1m])",
+          "legendFormat": "{{application}} - {{action}}"
+        }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "💾 Heap Usage % by Service",
+      "gridPos": {"x": 0, "y": 15, "w": 24, "h": 6},
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true,
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.7},
+              {"color": "red", "value": 0.85}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}",
+          "legendFormat": "{{application}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "📈 JVM Classes Loaded",
+      "gridPos": {"x": 0, "y": 21, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "jvm_classes_loaded_classes",
+          "legendFormat": "{{application}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "⚡ System Load",
+      "gridPos": {"x": 12, "y": 21, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "system_load_average_1m",
+          "legendFormat": "{{application}} - 1m"
+        },
+        {
+          "expr": "system_load_average_5m",
+          "legendFormat": "{{application}} - 5m"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "🖥️ Service Status Overview",
+      "gridPos": {"x": 0, "y": 27, "w": 24, "h": 6},
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "expr": "up",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{application}}"
+        },
+        {
+          "expr": "process_uptime_seconds",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{application}}"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "query": "label_values(up, application)",
+        "multi": true,
+        "includeAll": true,
+        "current": {"text": ["All"], "value": ["$__all"]}
+      }
+    ]
+  }
+}

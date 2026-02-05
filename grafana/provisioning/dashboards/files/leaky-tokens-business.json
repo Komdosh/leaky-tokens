@@ -1,0 +1,339 @@
+{
+  "uid": "leaky-tokens-business",
+  "title": "💼 Leaky Tokens - Business Metrics",
+  "tags": ["leaky-tokens", "business", "tokens", "quotas"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "description": "Business-focused metrics: tokens, quotas, consumption, and user activity",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "💰 Total Tokens Consumed (Today)",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "blue", "value": null},
+              {"color": "green", "value": 10000}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(token_consume_total{outcome=\"allowed\"}[24h]))",
+          "legendFormat": "Tokens"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "✅ Successful Consumptions",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_consume_total{outcome=\"allowed\"}[5m]))",
+          "legendFormat": "Success/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🚫 Denied (Quota)",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 1}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_consume_total{outcome=\"quota_insufficient\"}[5m]))",
+          "legendFormat": "Quota Denied/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🚦 Rate Limited",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 5},
+              {"color": "orange", "value": 20}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_consume_total{outcome=\"rate_limited\"}[5m]))",
+          "legendFormat": "Rate Limited/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "❌ Provider Failures",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 1}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_consume_total{outcome=\"provider_failure\"}[5m]))",
+          "legendFormat": "Failures/min"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "💵 SAGA Completions",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_purchase_saga_completed_total[5m]))",
+          "legendFormat": "Completed/min"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "📊 Token Consumption by Provider",
+      "gridPos": {"x": 0, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"},
+        "tooltip": {"mode": "multi"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "tokens/min",
+          "custom": {"lineWidth": 2, "fillOpacity": 15}
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(token_consume_total{outcome=\"allowed\"}[1m]))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🎯 Consumption Outcomes Over Time",
+      "gridPos": {"x": 12, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"},
+        "tooltip": {"mode": "multi"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"lineWidth": 2, "fillOpacity": 20, "stacking": {"mode": "normal"}}
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(token_consume_total[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "🎨 Consumption Distribution by Provider",
+      "gridPos": {"x": 0, "y": 9, "w": 6, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"},
+        "pieType": "donut"
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (increase(token_consume_total{outcome=\"allowed\"}[24h]))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "📊 Outcomes Breakdown",
+      "gridPos": {"x": 6, "y": 9, "w": 6, "h": 6},
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(token_consume_total[24h]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "🔍 Quota Lookup Activity",
+      "gridPos": {"x": 12, "y": 9, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(token_quota_lookup_total[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "🏆 Top Users by Token Consumption (24h)",
+      "gridPos": {"x": 0, "y": 15, "w": 12, "h": 6},
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (userId) (increase(token_consume_total{outcome=\"allowed\"}[24h])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{userId}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "💵 SAGA Purchase Activity",
+      "gridPos": {"x": 12, "y": 15, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_purchase_saga_started_total[1m]))",
+          "legendFormat": "Started/min"
+        },
+        {
+          "expr": "sum(rate(token_purchase_saga_completed_total[1m]))",
+          "legendFormat": "Completed/min"
+        },
+        {
+          "expr": "sum(rate(token_purchase_saga_failed_total[1m]))",
+          "legendFormat": "Failed/min"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "📈 Provider Success Rates",
+      "gridPos": {"x": 0, "y": 21, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(token_consume_total{outcome=\"allowed\"}[5m])) / sum by (provider) (rate(token_consume_total[5m]))",
+          "legendFormat": "{{provider}} Success %"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "⚡ Hourly Token Consumption Pattern",
+      "gridPos": {"x": 12, "y": 21, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "list"}
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_consume_total{outcome=\"allowed\"}[1h]))",
+          "legendFormat": "Tokens/hour"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "provider",
+        "type": "query",
+        "query": "label_values(token_consume_total, provider)",
+        "multi": true,
+        "includeAll": true,
+        "current": {"text": ["All"], "value": ["$__all"]}
+      },
+      {
+        "name": "time_range",
+        "type": "interval",
+        "query": "5m,15m,1h,6h,24h",
+        "current": {"text": "5m", "value": "5m"}
+      }
+    ]
+  }
+}

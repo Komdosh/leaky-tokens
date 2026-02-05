@@ -10,3 +10,17 @@ providers:
     allowUiUpdates: true
     options:
       path: /etc/grafana/provisioning/dashboards/files
+
+# Dashboard Documentation
+# See README.md in this directory for detailed information about:
+# - Available dashboards and their purposes
+# - Dashboard variables and filtering
+# - Customization instructions
+# - Metrics reference
+# - Recommended alerting thresholds
+#
+# Dashboards included:
+# - leaky-tokens-overview.json    : Executive overview (high-level metrics)
+# - leaky-tokens-business.json    : Business metrics (tokens, quotas, SAGA)
+# - leaky-tokens-gateway.json     : Gateway & security (auth, rate limiting)
+# - leaky-tokens-system.json      : System health (JVM, DB, infrastructure)

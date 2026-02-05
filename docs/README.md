@@ -11,6 +11,7 @@ Welcome to the Leaky Tokens project documentation. This microservices-based toke
 - [Use Cases](05-use-cases.md) - Business use cases and workflows
 - [Configuration](06-configuration.md) - Configuration options and feature flags
 - [Monitoring & Observability](07-monitoring.md) - Metrics, logs, and tracing
+- [Distributed Tracing](TRACING.md) - Jaeger setup and trace analysis 🕵️
 - [API Reference](08-api-reference.md) - Complete API documentation
 - [Troubleshooting](09-troubleshooting.md) - Common issues and solutions
 - [Development Guide](10-development.md) - Contributing and development setup

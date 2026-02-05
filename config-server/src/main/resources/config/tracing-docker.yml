@@ -1,0 +1,19 @@
+# 🕵️ Tracing Configuration for Docker Environment
+# 
+# This configuration enables distributed tracing via Jaeger in Docker.
+# OTLP endpoint points to the jaeger container.
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://jaeger:4318/v1/traces
+      timeout: 10s
+      compression: gzip
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

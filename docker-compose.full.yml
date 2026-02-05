@@ -45,9 +45,15 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
-  cassandra:
+  cassandra-db:
     image: cassandra:5.0.1
     container_name: cassandra-db
     ports:
@@ -64,6 +70,22 @@ services:
       retries: 5
     restart: unless-stopped
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.58
+    container_name: jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4318:4318"    # OTLP HTTP
+      - "4317:4317"    # OTLP gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   service-discovery:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
@@ -73,8 +95,20 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/service-discovery", "--project-cache-dir", "/root/.gradle/project-cache/service-discovery", ":service-discovery:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/service-discovery
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     ports:
       - "8761:8761"
+    depends_on:
+      jaeger:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8761'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   config-server:
     image: eclipse-temurin:25-jdk
@@ -87,10 +121,22 @@ services:
       - GRADLE_USER_HOME=/root/.gradle/config-server
       - SPRING_PROFILES_ACTIVE=native
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
+      service-discovery:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
     ports:
       - "8888:8888"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8888'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   api-gateway:
     image: eclipse-temurin:25-jdk
@@ -101,14 +147,27 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/api-gateway", "--project-cache-dir", "/root/.gradle/project-cache/api-gateway", ":api-gateway:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/api-gateway
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8080'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   auth-server:
     image: eclipse-temurin:25-jdk
@@ -119,7 +178,7 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/auth-server", "--project-cache-dir", "/root/.gradle/project-cache/auth-server", ":auth-server:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/auth-server
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
@@ -127,13 +186,28 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
-      - postgres
-      - redis
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
     ports:
       - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8081'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   token-service:
     image: eclipse-temurin:25-jdk
@@ -144,7 +218,7 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/token-service", "--project-cache-dir", "/root/.gradle/project-cache/token-service", ":token-service:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/token-service
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/token_db
@@ -153,14 +227,30 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
-      - postgres
-      - redis
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      jaeger:
+        condition: service_healthy
     ports:
       - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8082'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   analytics-service:
     image: eclipse-temurin:25-jdk
@@ -177,7 +267,7 @@ services:
     restart: on-failure
     environment:
       - GRADLE_USER_HOME=/root/.gradle/analytics-service
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_CASSANDRA_CONTACT_POINTS=cassandra-db
@@ -190,13 +280,27 @@ services:
       - SPRING_DATA_CASSANDRA_SCHEMA_ACTION=CREATE_IF_NOT_EXISTS
       - 'SPRING_APPLICATION_JSON={"spring":{"cassandra":{"contact-points":["cassandra-db"],"local-datacenter":"datacenter1","keyspace-name":"analytics_keyspace","schema-action":"CREATE_IF_NOT_EXISTS"},"data":{"cassandra":{"contact-points":["cassandra-db"],"local-datacenter":"datacenter1","keyspace-name":"analytics_keyspace","schema-action":"CREATE_IF_NOT_EXISTS"}}}}'
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
-      - cassandra
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      cassandra-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      jaeger:
+        condition: service_healthy
     ports:
       - "8083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8083'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   qwen-stub:
     image: eclipse-temurin:25-jdk
@@ -207,14 +311,27 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/qwen-stub", "--project-cache-dir", "/root/.gradle/project-cache/qwen-stub", ":qwen-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/qwen-stub
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
     ports:
       - "8091:8091"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8091'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   gemini-stub:
     image: eclipse-temurin:25-jdk
@@ -225,14 +342,27 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/gemini-stub", "--project-cache-dir", "/root/.gradle/project-cache/gemini-stub", ":gemini-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/gemini-stub
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
     ports:
       - "8092:8092"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8092'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
   openai-stub:
     image: eclipse-temurin:25-jdk
@@ -243,14 +373,27 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/openai-stub", "--project-cache-dir", "/root/.gradle/project-cache/openai-stub", ":openai-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/openai-stub
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,tracing
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
-      - service-discovery
-      - config-server
+      service-discovery:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
     ports:
       - "8093:8093"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'echo > /dev/tcp/localhost/8093'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
 volumes:
   postgres_data:

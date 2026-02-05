@@ -1,460 +1,388 @@
-# Leaky Tokens - Microservices Architecture Showcase
+# 🚀 Leaky Tokens
+
+<div align="center">
+
+[![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Gradle](https://img.shields.io/badge/Gradle-Kotlin%20DSL-02303A?style=for-the-badge&logo=gradle)](https://gradle.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+**Enterprise-Grade Token Management & Rate Limiting System**
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Microservices-Ready-success?style=flat-square&logo=serverless" />
+  <img src="https://img.shields.io/badge/Kafka-Events-informational?style=flat-square&logo=apache-kafka" />
+  <img src="https://img.shields.io/badge/SAGA-Pattern-orange?style=flat-square" />
+  <img src="https://img.shields.io/badge/Observability-Full-blueviolet?style=flat-square" />
+</p>
+
+[📖 Documentation](#documentation) • [🚀 Quick Start](#quick-start) • [📊 Architecture](#architecture) • [🔧 API](#api-reference)
+
+</div>
+
+---
 
 ## WHY?
 
 This is an auto-generated project by AI agents. I already have experience with all of these technologies, but nobody
-cares if you don’t have a GitHub repo with a pet project—so here it is.
+cares if you don't have a GitHub repo with a pet project—so here it is.
 
-Why do I use AI agents to generate projects? Because it’s fun and I’m bored. Do I really work with all of these
-technologies? Yep. Ten years in, that’s the answer.
+Why do I use AI agents to generate projects? Because it's fun and I'm bored. Do I really work with all of these
+technologies? Yep. Ten years in, that's the answer.
 
-But you still have to write code yourself, because AI agents are not perfect and can’t write everything for you. And
-this project doesn’t show your skills.
-Well, that’s the new world. I worked hard before. I wrote code day and night, but times have changed.
+- But you still have to write code yourself, because AI agents are not perfect and can't write everything for you. And
+this project doesn't show your skills.
+- Well, that's the new world. I worked hard before. I wrote code day and night, but times have changed.
 
-## Project Overview
+---
 
-Leaky Tokens is a comprehensive microservices-based demonstration project showcasing advanced Java/Spring Boot
-capabilities for Senior+/Staff level developers. The project simulates a token-based API gateway system that connects to
-various paid token-based services like Qwen API, Gemini API, and OpenAI API through custom stub implementations.
+## ✨ Features
 
-## Goals
+<table>
+<tr>
+<td width="50%">
 
-- Demonstrate advanced microservices architecture patterns
-- Showcase enterprise-grade infrastructure with monitoring and observability
-- Implement complex distributed systems concepts (SAGA, Transactional Outbox, etc.)
-- Provide a complete development environment using Docker Compose
-- Show proficiency in modern Java 25, Spring Boot, and cloud-native technologies
+### 🎯 Core Capabilities
+- **🪣 Leaky Bucket Rate Limiting** - Smooth traffic flow
+- **💰 Token Quotas** - Per-user & org-level management
+- **⚡ SAGA Orchestration** - Distributed transactions
+- **🔑 Multi-Auth** - JWT + API Key support
 
-## Key Features
+</td>
+<td width="50%">
 
-- **Microservices Architecture**: 5+ interconnected services with service discovery
-- **Token Management**: Leaky bucket algorithm implementation for rate limiting
-- **Token Quotas**: Persistent per-user/provider token pools with reservation and release
-- **Organization Quotas**: Optional shared org-level token pools for multi-tenant usage
-- **Priority Tiers**: Role-based tiering (e.g., USER/ADMIN) for quota caps and rate limits
-- **Advanced Rate Limiting**: Leaky bucket, fixed window, and token bucket strategies
-- **Service Mesh**: Circuit breaker and resilience patterns
-- **Data Storage**: PostgreSQL, Redis, and Apache Cassandra integration
-- **Message Queuing**: Kafka for asynchronous communication
-- **Security**: Authorization server for resource protection + API key management
-- **Security Headers**: Common security headers across gateway, core services, stub providers, and infrastructure
-  services
-- **Observability**: Prometheus metrics, Grafana visualization, and distributed tracing
-- **Configuration Management**: Centralized config server
+### 🏗️ Architecture
+- **☁️ Cloud-Native** - 12-Factor App ready
+- **🔍 Service Discovery** - Eureka registry
+- **⚖️ Load Balancing** - Gateway routing
+- **🛡️ Circuit Breaker** - Resilience4j
 
-## Technologies Stack
+</td>
+</tr>
+<tr>
+<td width="50%">
 
-### Backend
+### 📊 Observability
+- **📈 Prometheus Metrics** - Real-time monitoring
+- **📉 Grafana Dashboards** - Visual insights
+- **🔎 Distributed Tracing** - Jaeger integration
+- **📝 Centralized Logs** - Full audit trail
 
-- Java 25
-- Spring Boot 4.x
-- Spring Cloud Gateway
-- Spring Security OAuth2
-- Spring Data JPA
-- Spring Kafka
+</td>
+<td width="50%">
 
-### Infrastructure
+### 🗄️ Data Layer
+- **🐘 PostgreSQL** - Primary persistence
+- **⚡ Redis** - Caching & rate limits
+- **📨 Kafka** - Event streaming
+- **📦 Cassandra** - Time-series analytics
 
-- Docker & Docker Compose
-- PostgreSQL
-- Redis
-- Apache Kafka
-- Apache Cassandra
-- Prometheus
-- Grafana
-- Zipkin/Jaeger (for distributed tracing)
+</td>
+</tr>
+</table>
 
-### Development Tools
+---
 
-- Gradle Kotlin DSL
-- OpenAPI (Swagger)
-- Lombok
-- MapStruct
+## 🏛️ Architecture Overview
 
-## Architecture Components
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        🌐 API Gateway                            │
+│                    (Port 8080 - Entry Point)                     │
+└─────────────┬───────────────────────────────────────────────────┘
+              │
+    ┌─────────┼─────────┬─────────────┐
+    │         │         │             │
+    ▼         ▼         ▼             ▼
+┌───────┐ ┌───────┐ ┌────────┐ ┌──────────┐
+│  🔐   │ │  🪙   │ │  📊    │ │  📝      │
+│ Auth  │ │ Token │ │Analytics│ │ Config  │
+│ 8081  │ │ 8082  │ │  8083  │ │  8888   │
+└───────┘ └───────┘ └────────┘ └──────────┘
+                                              
+🗄️ PostgreSQL  ⚡ Redis  📨 Kafka  📦 Cassandra
+```
 
-- **API Gateway**: Entry point for all client requests
-- **Authorization Server**: OAuth2/OIDC compliant authentication
-- **Config Server**: Centralized configuration management
-- **Service Discovery**: Eureka-based service registry
-- **Token Service**: Core leaky bucket implementation
-- **Analytics Service**: Metrics and analytics processing
+### 🎯 Service Registry
 
-## Getting Started
+| Service | Port | Purpose | Status |
+|---------|------|---------|--------|
+| 🌐 API Gateway | 8080 | Entry point, routing, rate limiting | ✅ Ready |
+| 🔐 Auth Server | 8081 | JWT & API Key authentication | ✅ Ready |
+| 🪙 Token Service | 8082 | Core business logic | ✅ Ready |
+| 📊 Analytics | 8083 | Usage tracking & reports | ✅ Ready |
+| 📍 Eureka | 8761 | Service discovery | ✅ Ready |
+| ⚙️ Config | 8888 | Centralized configuration | ✅ Ready |
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Java 25
-- Docker & Docker Compose
-- Gradle
+- ☕ Java 25
+- 🐳 Docker & Docker Compose
+- 📦 Gradle (wrapper included)
 
-### Running the Application
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd leaky-tokens
-
-# Start the infrastructure
-docker-compose up -d
-
-# Build and run the services
-./gradlew bootRun
-```
-
-### Local Dev (Service-Only)
-
-For quick local boot without databases/Kafka/Cassandra, use the included `docker-compose.yml`.
-It runs each service with the `local` Spring profile where data/messaging autoconfig is disabled.
+### ⚡ One-Command Start
 
 ```bash
-docker-compose up
-```
+# Clone repository
+git clone <repository-url> && cd leaky-tokens
 
-### Local Dev (Infrastructure)
-
-To boot infra dependencies plus Eureka service discovery for local profiles, use `docker-compose.infra.yml`.
-
-```bash
+# Start infrastructure
 docker-compose -f docker-compose.infra.yml up -d
+
+# Run all services
+./gradlew bootRun --parallel
 ```
 
-This brings up Cassandra/Postgres/Redis/Kafka and the Eureka server on `http://localhost:8761`.
-
-### Local Dev (Full Stack)
-
-To run services plus Kafka/Redis/Postgres/Cassandra together (and publish token usage to Kafka), use:
+### 🧪 Test It Works
 
 ```bash
-docker-compose -f docker-compose.full.yml up
-```
+# Check service health
+curl http://localhost:8082/api/v1/tokens/status | jq
 
-This uses `application-docker.yml` for `auth-server`, `token-service`, and `analytics-service`.
-
-### Observability Stack
-
-To run Prometheus + Grafana:
-
-```bash
-docker-compose -f docker-compose.observability.yml up -d
-```
-
-Prometheus: http://localhost:9090  
-Grafana: http://localhost:3000 (admin/admin)
-
-Grafana is provisioned with a starter dashboard: "Leaky Tokens Overview".
-
-### Tracing (Jaeger)
-
-To run Jaeger (OTLP):
-
-```bash
-docker-compose -f docker-compose.tracing.yml up -d
-```
-
-Jaeger UI: http://localhost:16686
-
-### Stub Provider APIs
-
-Once the full stack is running, the stub providers are available via the gateway:
-
-```bash
-curl -s -X POST http://localhost:8080/api/v1/qwen/chat \
+# Register a user
+curl -X POST http://localhost:8081/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"prompt":"hello"}' | jq
+  -d '{"username":"demo","email":"demo@example.com","password":"password"}' | jq
 
-curl -s -X POST http://localhost:8080/api/v1/gemini/chat \
+# Test token consumption
+curl -X POST http://localhost:8082/api/v1/tokens/consume \
   -H "Content-Type: application/json" \
-  -d '{"prompt":"hello"}' | jq
-
-curl -s -X POST http://localhost:8080/api/v1/openai/chat \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"hello"}' | jq
+  -d '{"userId":"YOUR_USER_ID","provider":"openai","tokens":50}' | jq
 ```
 
-### Analytics Smoke Test
+---
 
-With the full stack running, you can post a token usage event and read it back:
+## 📖 Documentation
 
-```bash
-./scripts/analytics-smoke.sh openai 5
-```
+<div align="center">
 
-### Kafka Consumer Helper
+| 📚 Guide | 📝 Description |
+|----------|---------------|
+| [📘 Overview](docs/01-overview.md) | Project purpose & architecture |
+| [🚀 Getting Started](docs/02-getting-started.md) | Installation & setup |
+| [👤 User Guide](docs/03-user-guide.md) | How to use the API |
+| [🏗️ Architecture](docs/04-architecture.md) | Technical deep-dive |
+| [🎯 Use Cases](docs/05-use-cases.md) | Business scenarios |
+| [⚙️ Configuration](docs/06-configuration.md) | All config options |
+| [📊 Monitoring](docs/07-monitoring.md) | Metrics, logs, tracing |
+| [📋 API Reference](docs/08-api-reference.md) | Complete API docs |
+| [🔧 Troubleshooting](docs/09-troubleshooting.md) | Common issues |
+| [💻 Development](docs/10-development.md) | Contributing guide |
 
-To watch raw `token-usage` events on Kafka:
+</div>
 
-```bash
-./scripts/kafka-consume-token-usage.sh
-```
+---
 
-### Smoke Tests
+## 🛠️ Technology Stack
 
-Run the services (at least `service-discovery`, `config-server`, `api-gateway`, `token-service`, `auth-server`,
-`analytics-service`) and then:
+### Backend
+<p align="left">
+  <img src="https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk" />
+  <img src="https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen?style=flat-square&logo=spring" />
+  <img src="https://img.shields.io/badge/Spring%20Cloud-2025.1.1-blue?style=flat-square&logo=spring" />
+  <img src="https://img.shields.io/badge/Lombok-1.18.40-red?style=flat-square" />
+  <img src="https://img.shields.io/badge/MapStruct-1.6.2-yellow?style=flat-square" />
+</p>
 
-```bash
-# Direct service calls
-curl -s http://localhost:8082/api/v1/tokens/status | jq
-curl -s http://localhost:8081/api/v1/auth/health | jq
-curl -s http://localhost:8083/api/v1/analytics/health | jq
+### Infrastructure
+<p align="left">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-blue?style=flat-square&logo=postgresql" />
+  <img src="https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis" />
+  <img src="https://img.shields.io/badge/Kafka-7.5-black?style=flat-square&logo=apache-kafka" />
+  <img src="https://img.shields.io/badge/Cassandra-4.1-blue?style=flat-square&logo=apache-cassandra" />
+</p>
 
-# Token consume (direct)
-curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":100}' | jq
+### Observability
+<p align="left">
+  <img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus" />
+  <img src="https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana" />
+  <img src="https://img.shields.io/badge/Jaeger-66CFE3?style=flat-square" />
+</p>
 
-# Token quota
-curl -s "http://localhost:8082/api/v1/tokens/quota?userId=00000000-0000-0000-0000-000000000001&provider=openai" | jq
+---
 
-# Via API Gateway (routes)
-curl -s http://localhost:8080/api/v1/tokens/status | jq
-curl -s http://localhost:8080/api/v1/auth/health | jq
-curl -s http://localhost:8080/api/v1/analytics/health | jq
+## 📊 Key Capabilities
 
-# Token consume (gateway)
-curl -s -X POST http://localhost:8080/api/v1/tokens/consume \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":100}' | jq
+### 🪣 Rate Limiting Strategies
 
-# Actuator info
-curl -s http://localhost:8082/actuator/info | jq
-curl -s http://localhost:8081/actuator/info | jq
-curl -s http://localhost:8083/actuator/info | jq
-```
+<details>
+<summary><b>Leaky Bucket (Default)</b></summary>
 
-### API Key Management
+Tokens leak at a constant rate, smoothing out traffic bursts:
 
-Create, list, and revoke API keys using the auth server:
-
-```bash
-# Create API key
-curl -s -X POST http://localhost:8081/api/v1/auth/api-keys \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","name":"cli-key"}' | jq
-
-# List API keys
-curl -s "http://localhost:8081/api/v1/auth/api-keys?userId=00000000-0000-0000-0000-000000000001" | jq
-
-# Revoke API key
-curl -s -X DELETE "http://localhost:8081/api/v1/auth/api-keys?userId=00000000-0000-0000-0000-000000000001&apiKeyId=<api-key-id>"
-```
-
-### API Key Validation (Gateway)
-
-The gateway can validate API keys for incoming requests. By default it expects `X-Api-Key` and calls
-`/api/v1/auth/api-keys/validate` on the auth server, then forwards `X-User-Id` downstream when valid.
-Validations are cached in-memory to reduce auth-server calls.
-
-Example:
-
-```bash
-curl -s -X POST http://localhost:8080/api/v1/tokens/consume \
-  -H "Content-Type: application/json" \
-  -H "X-Api-Key: <your-api-key>" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":100}' | jq
-```
-
-### OpenAPI / Swagger UI
-
-Each service exposes OpenAPI docs and Swagger UI:
-
-```bash
-# API Gateway
-open http://localhost:8080/swagger-ui/index.html
-curl -s http://localhost:8080/v3/api-docs | jq
-
-# Auth Server
-open http://localhost:8081/swagger-ui/index.html
-curl -s http://localhost:8081/v3/api-docs | jq
-
-# Token Service
-open http://localhost:8082/swagger-ui/index.html
-curl -s http://localhost:8082/v3/api-docs | jq
-
-# Analytics Service
-open http://localhost:8083/swagger-ui/index.html
-curl -s http://localhost:8083/v3/api-docs | jq
-```
-
-### Deployment & Ops
-
-See `docs/deployment_ops.md` for Docker compose usage, health checks, logs, and troubleshooting.
-
-### Tiered Quotas (USER/ADMIN)
-
-Tiers are resolved from JWT roles and can override quota caps and rate limits.
-Defaults are configured in `config-server/src/main/resources/config/token-service*.yml` under `token.tiers`.
-
-Example (config excerpt):
-
-```
+```yaml
 token:
-  tiers:
-    default-tier: USER
-    levels:
-      USER:
-        priority: 10
-        bucket-capacity-multiplier: 1.0
-        bucket-leak-rate-multiplier: 1.0
-        quota-max-tokens: 100000
-      ADMIN:
-        priority: 100
-        bucket-capacity-multiplier: 2.0
-        bucket-leak-rate-multiplier: 2.0
-        quota-max-tokens: 500000
+  bucket:
+    capacity: 1000
+    leakRatePerSecond: 10.0
+    strategy: LEAKY_BUCKET
 ```
+</details>
 
-#### Tier/Org Quota Usage (API Examples)
+<details>
+<summary><b>Token Bucket</b></summary>
 
-Obtain a JWT (roles default to `USER` on registration):
+Allows short bursts while maintaining average rate:
+
+```yaml
+token:
+  bucket:
+    capacity: 1000
+    leakRatePerSecond: 10.0
+    strategy: TOKEN_BUCKET
+```
+</details>
+
+<details>
+<summary><b>Fixed Window</b></summary>
+
+Simple counter-based limiting:
+
+```yaml
+token:
+  bucket:
+    capacity: 1000
+    windowSeconds: 60
+    strategy: FIXED_WINDOW
+```
+</details>
+
+### 💰 Quota Management
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/auth/register \
+# Check quota
+curl "http://localhost:8082/api/v1/tokens/quota?userId=...&provider=openai"
+
+# Consume tokens
+curl -X POST http://localhost:8082/api/v1/tokens/consume \
+  -d '{"userId":"...","provider":"openai","tokens":100}'
+
+# Purchase more tokens
+curl -X POST http://localhost:8082/api/v1/tokens/purchase \
+  -H "Idempotency-Key: purchase-001" \
+  -d '{"userId":"...","provider":"openai","tokens":1000}'
+```
+
+---
+
+## 🔍 Observability
+
+### 📈 Monitoring URLs
+
+| Tool | URL | Description |
+|------|-----|-------------|
+| 📊 Grafana | http://localhost:3000 | Dashboards (admin/admin) |
+| 📈 Prometheus | http://localhost:9090 | Metrics collection |
+| 🔎 Jaeger | http://localhost:16686 | Distributed tracing |
+| 📍 Eureka | http://localhost:8761 | Service registry |
+
+### 🕵️ Distributed Tracing
+
+View end-to-end request flows across microservices:
+
+```bash
+# Start with full tracing stack (includes Jaeger)
+docker-compose -f docker-compose.full.yml up -d
+
+# Access Jaeger UI
+open http://localhost:16686
+
+# Make some requests and watch traces appear
+curl -X POST http://localhost:8080/api/v1/tokens/consume \
   -H "Content-Type: application/json" \
-  -d '{"username":"quota-user","email":"quota-user@example.com","password":"password"}' | jq -r .token)
+  -d '{"userId":"...","provider":"openai","tokens":50}'
 ```
 
-Check user quota:
+**Trace Analysis:**
+- See request paths through all services
+- Identify latency bottlenecks
+- Debug distributed issues
+- 100% sampling in development mode
+
+📚 **[Full Tracing Guide](docs/TRACING.md)**
+
+### 📝 Quick Log Check
 
 ```bash
-curl -s "http://localhost:8082/api/v1/tokens/quota?userId=00000000-0000-0000-0000-000000000001&provider=openai" \
-  -H "Authorization: Bearer ${TOKEN}" | jq
+# Service logs
+./gradlew :token-service:bootRun 2>&1 | tee service.log
+
+# Docker logs
+docker-compose logs -f token-service
+
+# Search for errors
+grep "ERROR" service.log
 ```
 
-Consume tokens (user quota):
+---
+
+## 🎯 API Reference
+
+### Authentication Methods
 
 ```bash
-curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","provider":"openai","tokens":25}' | jq
+# JWT Token
+curl -H "Authorization: Bearer $JWT_TOKEN" ...
+
+# API Key
+curl -H "X-Api-Key: leaky_userid_xxxx" ...
 ```
 
-Consume tokens (org quota):
+### Core Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/v1/auth/register` | Create user account | Public |
+| POST | `/api/v1/auth/login` | Authenticate | Public |
+| GET | `/api/v1/tokens/quota` | Check user quota | JWT |
+| POST | `/api/v1/tokens/consume` | Consume tokens | JWT |
+| POST | `/api/v1/tokens/purchase` | Buy tokens | JWT |
+| GET | `/api/v1/analytics/report` | Usage report | JWT |
+
+📚 **[Full API Documentation →](docs/08-api-reference.md)**
+
+---
+
+## 🧪 Testing
 
 ```bash
-curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","orgId":"10000000-0000-0000-0000-000000000001","provider":"openai","tokens":25}' | jq
-```
+# Run all tests
+./gradlew test
 
-Org quota lookup:
+# Run with coverage
+./gradlew jacocoTestReport
 
-```bash
-curl -s "http://localhost:8082/api/v1/tokens/quota/org?orgId=10000000-0000-0000-0000-000000000001&provider=openai" \
-  -H "Authorization: Bearer ${TOKEN}" | jq
-```
-
-### Organization Quotas
-
-If `orgId` is provided, the token service applies org-level quotas instead of user-level quotas.
-You can also query org quotas directly.
-
-```bash
-# Consume using org quota
-curl -s -X POST http://localhost:8082/api/v1/tokens/consume \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","orgId":"10000000-0000-0000-0000-000000000001","provider":"openai","tokens":25}' | jq
-
-# Org quota lookup
-curl -s "http://localhost:8082/api/v1/tokens/quota/org?orgId=10000000-0000-0000-0000-000000000001&provider=openai" | jq
-
-# Purchase tokens into an org pool (saga)
-curl -s -X POST http://localhost:8082/api/v1/tokens/purchase \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"00000000-0000-0000-0000-000000000001","orgId":"10000000-0000-0000-0000-000000000001","provider":"openai","tokens":1000}' | jq
-```
-
-### Rate Limiting Strategies
-
-The token service supports multiple rate limiting strategies via configuration:
-
-```
-token.bucket.strategy=LEAKY_BUCKET
-token.bucket.capacity=1000
-token.bucket.leak-rate-per-second=10.0
-```
-
-```
-token.bucket.strategy=FIXED_WINDOW
-token.bucket.capacity=1000
-token.bucket.window-seconds=60
-```
-
-```
-token.bucket.strategy=TOKEN_BUCKET
-token.bucket.capacity=1000
-token.bucket.leak-rate-per-second=10.0
-```
-
-### Performance Baseline (Gatling)
-
-The `performance-tests` module contains a baseline Gatling simulation for token consumption.
-
-```bash
+# Performance tests
 ./gradlew :performance-tests:gatlingRun
 ```
 
-You can override defaults:
+---
 
-```bash
-./gradlew :performance-tests:gatlingRun \
-  -DbaseUrl=http://localhost:8080 \
-  -DapiKey=<your-api-key> \
-  -Dusers=50 \
-  -DrampSeconds=10 \
-  -DdurationSeconds=30
-```
+## 🤝 Contributing
 
-Additional simulations:
+We welcome contributions! Please see our [Development Guide](docs/10-development.md) for:
 
-```bash
-# Auth login
-./gradlew :performance-tests:gatlingRun -Dgatling.simulationClass=com.leaky.tokens.perf.AuthLoginSimulation \
-  -DauthBaseUrl=http://localhost:8081 \
-  -Dusername=user1 \
-  -Dpassword=password
+- 🏗️ Project structure
+- 📝 Code style guidelines
+- 🧪 Testing best practices
+- 🔧 Development setup
 
-# Analytics query
-./gradlew :performance-tests:gatlingRun -Dgatling.simulationClass=com.leaky.tokens.perf.AnalyticsQuerySimulation \
-  -DanalyticsBaseUrl=http://localhost:8083 \
-  -Dprovider=openai \
-  -Dlimit=10 \
-  -DbearerToken=<jwt>
+---
 
-# Token purchase saga
-./gradlew :performance-tests:gatlingRun -Dgatling.simulationClass=com.leaky.tokens.perf.TokenPurchaseSagaSimulation \
-  -DbaseUrl=http://localhost:8082 \
-  -Dusers=20 \
-  -DrampSeconds=10 \
-  -DdurationSeconds=30
+## 📄 License
 
-# Token quota check
-./gradlew :performance-tests:gatlingRun -Dgatling.simulationClass=com.leaky.tokens.perf.TokenQuotaCheckSimulation \
-  -DbaseUrl=http://localhost:8082 \
-  -DuserId=00000000-0000-0000-0000-000000000001 \
-  -Dprovider=openai
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-# Token usage publish (consume)
-./gradlew :performance-tests:gatlingRun -Dgatling.simulationClass=com.leaky.tokens.perf.TokenUsagePublishSimulation \
-  -DbaseUrl=http://localhost:8082 \
-  -DapiKey=<your-api-key>
-```
+---
 
-## Documentation
+<div align="center">
 
-- [Architecture Overview](architecture_overview.md) - System design and architecture
-- [Microservices Design](microservices_design.md) - Individual service specifications
-- [Infrastructure Plan](infrastructure_plan.md) - Docker Compose and monitoring setup
+**⭐ Star this repo if you find it helpful!**
 
-Step-by-Step:
+Made with ❤️ and 🤖 AI assistance
 
-- [Overview](docs/01-overview.md)
-- [Getting Started](docs/02-getting-started.md)
-- [User Guide](docs/03-user-guide.md) and [API Reference](docs/08-api-reference.md)
-- [Configuration Guide](docs/06-configuration.md)
-- [Monitoring & Observability](docs/07-monitoring.md)
-- [Troubleshooting](docs/09-troubleshooting.md)
+</div>

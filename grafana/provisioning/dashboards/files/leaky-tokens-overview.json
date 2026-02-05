@@ -1,69 +1,344 @@
 {
   "uid": "leaky-tokens-overview",
-  "title": "Leaky Tokens Overview",
-  "tags": ["leaky-tokens"],
+  "title": "🚀 Leaky Tokens - Executive Overview",
+  "tags": ["leaky-tokens", "overview", "executive"],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
+  "description": "High-level overview of the entire Leaky Tokens platform",
   "panels": [
     {
       "type": "stat",
-      "title": "API Gateway RPS",
-      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+      "title": "🔥 Total Requests/min",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1000},
+              {"color": "red", "value": 5000}
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"api-gateway\"}[1m]))",
-          "legendFormat": "rps"
+          "expr": "sum(rate(http_server_requests_seconds_count[1m]))",
+          "legendFormat": "Total RPS"
         }
       ]
     },
     {
       "type": "stat",
-      "title": "Token Service RPS",
-      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+      "title": "💰 Tokens Consumed/min",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "blue", "value": null},
+              {"color": "green", "value": 1000}
+            ]
+          },
+          "unit": "tokens/min"
+        }
+      },
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"token-service\"}[1m]))",
-          "legendFormat": "rps"
+          "expr": "sum(rate(token_consume_total{outcome=\"allowed\"}[1m]))",
+          "legendFormat": "Tokens/min"
         }
       ]
     },
     {
       "type": "stat",
-      "title": "Analytics Service RPS",
-      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+      "title": "⚡ Avg Latency (p95)",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.5},
+              {"color": "red", "value": 1.0}
+            ]
+          },
+          "unit": "s"
+        }
+      },
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"analytics-service\"}[1m]))",
-          "legendFormat": "rps"
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 Latency"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "❌ Error Rate",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.01},
+              {"color": "red", "value": 0.05}
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))",
+          "legendFormat": "Error Rate"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "🛡️ Rate Limited/min",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 10}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(token_consume_total{outcome=\"rate_limited\"}[1m]))",
+          "legendFormat": "Rate Limited"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "👥 Active Users",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 3},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "count(count by (userId) (token_consume_total))",
+          "legendFormat": "Active Users"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "HTTP Latency (p95)",
-      "gridPos": {"x": 0, "y": 4, "w": 24, "h": 6},
+      "title": "📊 Request Rate by Service",
+      "gridPos": {"x": 0, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "max"]},
+        "tooltip": {"mode": "multi"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {"lineWidth": 2, "fillOpacity": 10}
+        }
+      },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application))",
+          "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (application)",
           "legendFormat": "{{application}}"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "JVM Heap Used",
-      "gridPos": {"x": 0, "y": 10, "w": 24, "h": 6},
+      "title": "⏱️ Response Latency Percentiles",
+      "gridPos": {"x": 12, "y": 3, "w": 12, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {"lineWidth": 2}
+        }
+      },
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{area=\"heap\"}",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"api-gateway\"}[5m])) by (le))",
+          "legendFormat": "Gateway p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"api-gateway\"}[5m])) by (le))",
+          "legendFormat": "Gateway p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"api-gateway\"}[5m])) by (le))",
+          "legendFormat": "Gateway p99"
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "🎯 Token Consumption by Provider",
+      "gridPos": {"x": 0, "y": 9, "w": 8, "h": 6},
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right", "values": ["value", "percent"]},
+        "pieType": "donut"
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(token_consume_total{outcome=\"allowed\"}[5m]))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "🚦 Consumption Outcomes",
+      "gridPos": {"x": 8, "y": 9, "w": 8, "h": 6},
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "legend": {"displayMode": "list"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(token_consume_total[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "💾 JVM Heap Usage",
+      "gridPos": {"x": 16, "y": 9, "w": 8, "h": 6},
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 0.7},
+              {"color": "red", "value": 0.85}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}",
           "legendFormat": "{{application}}"
+        }
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "🔥 Latency Distribution (API Gateway)",
+      "gridPos": {"x": 0, "y": 15, "w": 12, "h": 6},
+      "options": {
+        "calculate": false,
+        "yAxis": {"unit": "s", "logBase": 1}
+      },
+      "dataFormat": "tsbuckets",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_bucket{application=\"api-gateway\"}[5m])) by (le)",
+          "format": "heatmap",
+          "legendFormat": "{{le}}"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "📈 Top API Endpoints (5m)",
+      "gridPos": {"x": 12, "y": 15, "w": 12, "h": 6},
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"displayName": "Requests", "desc": true}]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Requests",
+              "uri": "Endpoint"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "topk(10, sum by (uri) (rate(http_server_requests_seconds_count[5m])))",
+          "format": "table",
+          "instant": true
         }
       ]
     }
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "query": "label_values(http_server_requests_seconds_count, application)",
+        "multi": true,
+        "includeAll": true,
+        "current": {"text": ["All"], "value": ["$__all"]}
+      },
+      {
+        "name": "provider",
+        "type": "custom",
+        "query": "openai,qwen,gemini,all",
+        "multi": true,
+        "includeAll": true,
+        "current": {"text": ["all"], "value": "all"}
+      }
+    ]
   }
 }
