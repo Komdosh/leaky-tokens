@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
 
+@Getter
 public class AnalyticsReportResponse {
     @Schema(example = "openai")
     private String provider;
@@ -53,47 +55,4 @@ public class AnalyticsReportResponse {
         this.topUsers = topUsers;
     }
 
-    public String getProvider() {
-        return provider;
-    }
-
-    public Instant getWindowStart() {
-        return windowStart;
-    }
-
-    public Instant getWindowEnd() {
-        return windowEnd;
-    }
-
-    public int getTotalEvents() {
-        return totalEvents;
-    }
-
-    public int getAllowedEvents() {
-        return allowedEvents;
-    }
-
-    public int getDeniedEvents() {
-        return deniedEvents;
-    }
-
-    public long getTotalTokens() {
-        return totalTokens;
-    }
-
-    public double getAverageTokensPerEvent() {
-        return averageTokensPerEvent;
-    }
-
-    public int getUniqueUsers() {
-        return uniqueUsers;
-    }
-
-    public int getSampleLimit() {
-        return sampleLimit;
-    }
-
-    public List<UserUsageSummary> getTopUsers() {
-        return topUsers;
-    }
 }

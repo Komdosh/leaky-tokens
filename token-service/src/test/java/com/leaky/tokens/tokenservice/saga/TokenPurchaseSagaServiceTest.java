@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class TokenPurchaseSagaServiceTest {
@@ -202,6 +203,113 @@ class TokenPurchaseSagaServiceTest {
             .map(TokenOutboxEntry::getEventType)
             .toList();
         assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED");
+    }
+
+    @Test
+    void returnsExistingSagaWhenSaveConflictsAndPayloadMatches() {
+        TokenPurchaseSaga existing = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            null,
+            "openai",
+            5,
+            TokenPurchaseSagaStatus.STARTED
+        );
+        existing.setIdempotencyKey("idem-1");
+
+        when(sagaRepository.save(any(TokenPurchaseSaga.class)))
+            .thenThrow(new DataIntegrityViolationException("duplicate key"));
+        when(sagaRepository.findByIdempotencyKey(eq("idem-1")))
+            .thenReturn(Optional.empty(), Optional.of(existing));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("openai");
+        request.setTokens(5);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, "idem-1");
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.STARTED);
+        verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
+    }
+
+    @Test
+    void throwsConflictWhenSaveConflictsAndPayloadDiffers() {
+        TokenPurchaseSaga existing = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            null,
+            "openai",
+            5,
+            TokenPurchaseSagaStatus.STARTED
+        );
+        existing.setIdempotencyKey("idem-1");
+
+        when(sagaRepository.save(any(TokenPurchaseSaga.class)))
+            .thenThrow(new DataIntegrityViolationException("duplicate key"));
+        when(sagaRepository.findByIdempotencyKey(eq("idem-1")))
+            .thenReturn(Optional.empty(), Optional.of(existing));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("gemini");
+        request.setTokens(5);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.start(request, tier, "idem-1"))
+            .isInstanceOf(IdempotencyConflictException.class)
+            .hasMessageContaining("Idempotency key reuse");
+    }
+
+    @Test
+    void usesOrgQuotaWhenOrgIdProvided() {
+        when(sagaRepository.save(any(TokenPurchaseSaga.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(outboxRepository.save(any(TokenOutboxEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setOrgId("00000000-0000-0000-0000-000000000010");
+        request.setProvider("openai");
+        request.setTokens(8);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, null);
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        verify(quotaService, times(1)).addOrgTokens(eq(UUID.fromString("00000000-0000-0000-0000-000000000010")),
+            eq("openai"),
+            eq(8L),
+            eq(tier));
+        verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
     }
 
     @Test

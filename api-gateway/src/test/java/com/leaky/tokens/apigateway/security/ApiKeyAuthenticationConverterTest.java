@@ -61,4 +61,34 @@ class ApiKeyAuthenticationConverterTest {
         assertThat(token).isNotNull();
         assertThat(token.getCredentials()).isEqualTo("alt-key");
     }
+
+    @Test
+    void ignoresDefaultHeaderWhenCustomHeaderConfigured() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setHeaderName("X-Alt-Key");
+        ApiKeyAuthenticationConverter converter = new ApiKeyAuthenticationConverter(properties);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/")
+                .header("X-Api-Key", "raw-key")
+                .build()
+        );
+
+        assertThat(converter.convert(exchange).blockOptional()).isEmpty();
+    }
+
+    @Test
+    void usesFirstHeaderValueWhenMultipleProvided() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        ApiKeyAuthenticationConverter converter = new ApiKeyAuthenticationConverter(properties);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/")
+                .header("X-Api-Key", "  first-key  ", "second-key")
+                .build()
+        );
+
+        ApiKeyAuthenticationToken token = (ApiKeyAuthenticationToken) converter.convert(exchange).block();
+
+        assertThat(token).isNotNull();
+        assertThat(token.getCredentials()).isEqualTo("first-key");
+    }
 }

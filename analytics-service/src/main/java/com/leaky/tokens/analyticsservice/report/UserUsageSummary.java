@@ -1,7 +1,9 @@
 package com.leaky.tokens.analyticsservice.report;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
 
+@Getter
 public class UserUsageSummary {
     @Schema(example = "00000000-0000-0000-0000-000000000001")
     private String userId;
@@ -16,15 +18,4 @@ public class UserUsageSummary {
         this.events = events;
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
-    public long getTotalTokens() {
-        return totalTokens;
-    }
-
-    public int getEvents() {
-        return events;
-    }
 }

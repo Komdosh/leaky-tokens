@@ -39,9 +39,10 @@ class AnalyticsControllerTest {
     @Test
     void usageClampsLimitAndReturnsRecords() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
         AnalyticsController controller = new AnalyticsController(
             repository,
-            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            new AnalyticsMetrics(registry),
             Mockito.mock(AnalyticsReportService.class)
         );
 
@@ -58,6 +59,8 @@ class AnalyticsControllerTest {
         List<TokenUsageByProviderRecord> items = (List<TokenUsageByProviderRecord>) response.get("items");
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getUserId()).isEqualTo("user-1");
+        assertThat(registry.counter("analytics.usage.query.total", "provider", "openai", "outcome", "success").count())
+            .isEqualTo(1.0);
     }
 
     @Test
@@ -78,12 +81,32 @@ class AnalyticsControllerTest {
     }
 
     @Test
+    void usageRecordsMetricEvenWhenEmpty() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(registry),
+            Mockito.mock(AnalyticsReportService.class)
+        );
+
+        when(repository.findRecentByProvider(eq("openai"), eq(10))).thenReturn(List.of());
+
+        Map<String, Object> response = controller.usage("openai", 10);
+
+        assertThat(response.get("count")).isEqualTo(0);
+        assertThat(registry.counter("analytics.usage.query.total", "provider", "openai", "outcome", "success").count())
+            .isEqualTo(1.0);
+    }
+
+    @Test
     void reportReturnsServiceResponse() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
         AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
         AnalyticsController controller = new AnalyticsController(
             repository,
-            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            new AnalyticsMetrics(registry),
             reportService
         );
 
@@ -108,15 +131,50 @@ class AnalyticsControllerTest {
         assertThat(response.getProvider()).isEqualTo("openai");
         assertThat(response.getTotalEvents()).isEqualTo(10);
         assertThat(response.getTopUsers()).hasSize(1);
+        assertThat(registry.counter("analytics.report.query.total", "provider", "openai", "outcome", "success").count())
+            .isEqualTo(1.0);
+    }
+
+    @Test
+    void reportRecordsMetric() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(registry),
+            reportService
+        );
+
+        AnalyticsReportResponse report = new AnalyticsReportResponse(
+            "openai",
+            Instant.parse("2026-02-04T16:00:00Z"),
+            Instant.parse("2026-02-04T17:00:00Z"),
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0,
+            0,
+            List.of()
+        );
+        when(reportService.buildReport(eq("openai"), eq(15), eq(50))).thenReturn(report);
+
+        controller.report("openai", 15, 50);
+
+        assertThat(registry.counter("analytics.report.query.total", "provider", "openai", "outcome", "success").count())
+            .isEqualTo(1.0);
     }
 
     @Test
     void anomaliesReturnsServiceResponse() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
         AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
         AnalyticsController controller = new AnalyticsController(
             repository,
-            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            new AnalyticsMetrics(registry),
             reportService
         );
 
@@ -139,6 +197,39 @@ class AnalyticsControllerTest {
         verify(reportService).detectAnomaly(eq("openai"), eq(60), eq(4), eq(2.0), eq(200));
         assertThat(response.isAnomaly()).isTrue();
         assertThat(response.getCurrentTokens()).isEqualTo(1200);
+        assertThat(registry.counter("analytics.anomaly.query.total", "provider", "openai", "outcome", "success").count())
+            .isEqualTo(1.0);
+    }
+
+    @Test
+    void anomaliesRecordsMetric() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(registry),
+            reportService
+        );
+
+        AnalyticsAnomalyResponse anomaly = new AnalyticsAnomalyResponse(
+            "openai",
+            Instant.parse("2026-02-04T16:00:00Z"),
+            Instant.parse("2026-02-04T17:00:00Z"),
+            1,
+            0,
+            0.0,
+            0.0,
+            2.0,
+            false,
+            20
+        );
+        when(reportService.detectAnomaly(eq("openai"), eq(15), eq(1), eq(2.0), eq(20))).thenReturn(anomaly);
+
+        controller.anomalies("openai", 15, 1, 2.0, 20);
+
+        assertThat(registry.counter("analytics.anomaly.query.total", "provider", "openai", "outcome", "success").count())
+            .isEqualTo(1.0);
     }
 
     @Test

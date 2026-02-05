@@ -5,11 +5,15 @@ import java.time.Instant;
 import java.util.Objects;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.cassandra.core.cql.Ordering;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyClass;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 
+@Setter
+@Getter
 @PrimaryKeyClass
 public class TokenUsageByProviderKey implements Serializable {
     @PrimaryKeyColumn(name = "provider", type = PrimaryKeyType.PARTITIONED, ordinal = 0)
@@ -25,22 +29,6 @@ public class TokenUsageByProviderKey implements Serializable {
 
     public TokenUsageByProviderKey(String provider, Instant timestamp) {
         this.provider = provider;
-        this.timestamp = timestamp;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public Instant getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
 
