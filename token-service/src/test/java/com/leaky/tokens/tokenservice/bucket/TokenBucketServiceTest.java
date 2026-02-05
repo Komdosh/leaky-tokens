@@ -47,10 +47,10 @@ class TokenBucketServiceTest {
         assertThat(result.isAllowed()).isTrue();
         TokenUsageEvent event = eventRef.get();
         assertThat(event).isNotNull();
-        assertThat(event.getUserId()).isEqualTo("user-2");
-        assertThat(event.getProvider()).isEqualTo("openai");
-        assertThat(event.getTokens()).isEqualTo(3);
-        assertThat(event.isAllowed()).isTrue();
+        assertThat(event.userId()).isEqualTo("user-2");
+        assertThat(event.provider()).isEqualTo("openai");
+        assertThat(event.tokens()).isEqualTo(3);
+        assertThat(event.allowed()).isTrue();
     }
 
     @Test

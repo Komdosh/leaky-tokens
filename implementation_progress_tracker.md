@@ -42,6 +42,8 @@
 - Added config-server and service-discovery tests (context + security headers).
 - Added rate limit AUTO key isolation test.
 - Added gateway auth converter and user header filter edge-case tests.
+- Added gateway security config permit-all coverage.
+- Added gateway security config auth-required coverage.
 
 ## Blocking / Known Issues
 - None currently.

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import lombok.Getter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,6 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
     private final String apiKey;
     private final String userId;
+    @Getter
     private final List<String> roles;
 
     public ApiKeyAuthenticationToken(String apiKey) {
@@ -37,10 +39,6 @@ public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
     @Override
     public Object getPrincipal() {
         return userId;
-    }
-
-    public List<String> getRoles() {
-        return roles;
     }
 
     private static List<GrantedAuthority> authoritiesFromRoles(List<String> roles) {

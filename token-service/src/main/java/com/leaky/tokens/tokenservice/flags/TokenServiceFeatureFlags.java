@@ -1,9 +1,11 @@
 package com.leaky.tokens.tokenservice.flags;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+@Setter
 @Validated
 @ConfigurationProperties(prefix = "feature.flags.token-service")
 public class TokenServiceFeatureFlags {
@@ -16,15 +18,8 @@ public class TokenServiceFeatureFlags {
         return Boolean.TRUE.equals(quotaEnforcement);
     }
 
-    public void setQuotaEnforcement(Boolean quotaEnforcement) {
-        this.quotaEnforcement = quotaEnforcement;
-    }
-
     public boolean isSagaPurchases() {
         return Boolean.TRUE.equals(sagaPurchases);
     }
 
-    public void setSagaPurchases(Boolean sagaPurchases) {
-        this.sagaPurchases = sagaPurchases;
-    }
 }

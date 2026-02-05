@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.leaky.tokens.apigateway.metrics.GatewayMetrics;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -30,7 +31,7 @@ public class ApiKeyAuthenticationManager implements ReactiveAuthenticationManage
     }
 
     @Override
-    public Mono<Authentication> authenticate(Authentication authentication) {
+    public @NonNull Mono<Authentication> authenticate(@NonNull Authentication authentication) {
         if (!(authentication instanceof ApiKeyAuthenticationToken token)) {
             return Mono.empty();
         }

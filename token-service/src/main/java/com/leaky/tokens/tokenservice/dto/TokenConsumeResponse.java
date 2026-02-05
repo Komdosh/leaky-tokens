@@ -5,22 +5,11 @@ import java.util.Map;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public class TokenConsumeResponse {
-    @Schema(example = "true")
-    private final boolean allowed;
-    @Schema(example = "1000")
-    private final long capacity;
-    @Schema(example = "100")
-    private final long used;
-    @Schema(example = "900")
-    private final long remaining;
-    @Schema(example = "0")
-    private final long waitSeconds;
-    @Schema(example = "2026-02-04T17:00:00Z")
-    private final Instant timestamp;
-    @Schema(example = "{\"message\":\"ok\"}", description = "Provider response payload (raw JSON map)")
-    private final Map<String, Object> providerResponse;
-
+public record TokenConsumeResponse(@Schema(example = "true") boolean allowed, @Schema(example = "1000") long capacity,
+                                   @Schema(example = "100") long used, @Schema(example = "900") long remaining,
+                                   @Schema(example = "0") long waitSeconds,
+                                   @Schema(example = "2026-02-04T17:00:00Z") Instant timestamp,
+                                   @Schema(example = "{\"message\":\"ok\"}", description = "Provider response payload (raw JSON map)") Map<String, Object> providerResponse) {
     public TokenConsumeResponse(boolean allowed, long capacity, long used, long remaining, long waitSeconds,
                                 Instant timestamp, Map<String, Object> providerResponse) {
         this.allowed = allowed;
@@ -32,31 +21,38 @@ public class TokenConsumeResponse {
         this.providerResponse = providerResponse;
     }
 
-    public boolean isAllowed() {
+    @Override
+    public boolean allowed() {
         return allowed;
     }
 
-    public long getCapacity() {
+    @Override
+    public long capacity() {
         return capacity;
     }
 
-    public long getUsed() {
+    @Override
+    public long used() {
         return used;
     }
 
-    public long getRemaining() {
+    @Override
+    public long remaining() {
         return remaining;
     }
 
-    public long getWaitSeconds() {
+    @Override
+    public long waitSeconds() {
         return waitSeconds;
     }
 
-    public Instant getTimestamp() {
+    @Override
+    public Instant timestamp() {
         return timestamp;
     }
 
-    public Map<String, Object> getProviderResponse() {
+    @Override
+    public Map<String, Object> providerResponse() {
         return providerResponse;
     }
 }

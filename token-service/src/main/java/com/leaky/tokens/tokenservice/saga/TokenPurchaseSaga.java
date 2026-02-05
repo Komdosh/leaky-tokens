@@ -12,8 +12,10 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import lombok.Getter;
 import org.springframework.data.domain.Persistable;
 
+@Getter
 @Entity
 @Table(name = "token_purchase_saga")
 public class TokenPurchaseSaga implements Persistable<UUID> {
@@ -73,69 +75,34 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
         updatedAt = Instant.now();
     }
 
-    public UUID getId() {
-        return id;
-    }
-
     @Override
     @Transient
     public boolean isNew() {
         return createdAt == null;
     }
 
-    public UUID getUserId() {
-        return userId;
-    }
-
     public void setUserId(UUID userId) {
         this.userId = userId;
-    }
-
-    public UUID getOrgId() {
-        return orgId;
     }
 
     public void setOrgId(UUID orgId) {
         this.orgId = orgId;
     }
 
-    public String getProvider() {
-        return provider;
-    }
-
     public void setProvider(String provider) {
         this.provider = provider;
-    }
-
-    public long getTokens() {
-        return tokens;
     }
 
     public void setTokens(long tokens) {
         this.tokens = tokens;
     }
 
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
-
     public void setIdempotencyKey(String idempotencyKey) {
         this.idempotencyKey = idempotencyKey;
-    }
-
-    public TokenPurchaseSagaStatus getStatus() {
-        return status;
     }
 
     public void setStatus(TokenPurchaseSagaStatus status) {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
 }
