@@ -274,6 +274,33 @@ class TokenPurchaseSagaServiceTest {
         verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
     }
 
+    @Test
+    void ignoresBlankIdempotencyKey() {
+        when(sagaRepository.save(any(TokenPurchaseSaga.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(outboxRepository.save(any(TokenOutboxEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setProvider("openai");
+        request.setTokens(5);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, "   ");
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        verify(sagaRepository, times(0)).findByIdempotencyKey(any());
+        verify(outboxRepository, times(4)).save(any(TokenOutboxEntry.class));
+    }
+
     private TokenServiceFeatureFlags enabledFlags() {
         TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
         flags.setQuotaEnforcement(true);

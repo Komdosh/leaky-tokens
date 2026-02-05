@@ -46,6 +46,7 @@
 - Added gateway security config auth-required coverage.
 - Added gateway auth custom header coverage.
 - Added gateway security header and rate limit header assertions.
+- Added token saga blank idempotency and quota disabled pool tests.
 
 ## Blocking / Known Issues
 - None currently.

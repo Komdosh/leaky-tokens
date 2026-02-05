@@ -34,6 +34,35 @@ class TokenQuotaServiceTest {
     }
 
     @Test
+    void reserveReturnsPoolValuesWhenFeatureDisabledAndPoolExists() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        TokenQuotaProperties properties = new TokenQuotaProperties();
+        TokenServiceFeatureFlags flags = new TokenServiceFeatureFlags();
+        flags.setQuotaEnforcement(false);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            100,
+            75,
+            Instant.now().plus(Duration.ofHours(1)),
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findForUpdate(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, properties, flags);
+        TokenQuotaReservation reservation = service.reserve(userId, "openai", 50, null);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.total()).isEqualTo(100);
+        assertThat(reservation.remaining()).isEqualTo(75);
+    }
+
+    @Test
     void reserveRejectsWhenPoolMissing() {
         TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
         OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
