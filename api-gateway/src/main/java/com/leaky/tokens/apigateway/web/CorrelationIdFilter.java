@@ -2,6 +2,7 @@ package com.leaky.tokens.apigateway.web;
 
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
 import org.slf4j.MDC;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ public class CorrelationIdFilter implements WebFilter {
     public static final String HEADER_NAME = "X-Correlation-Id";
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    public @NonNull Mono<Void> filter(ServerWebExchange exchange, @NonNull WebFilterChain chain) {
         String correlationId = exchange.getRequest().getHeaders().getFirst(HEADER_NAME);
         if (correlationId == null || correlationId.isBlank()) {
             correlationId = UUID.randomUUID().toString();
@@ -33,6 +34,6 @@ public class CorrelationIdFilter implements WebFilter {
             return Mono.empty();
         });
         return chain.filter(exchange.mutate().request(mutated).build())
-            .doFinally(signalType -> MDC.remove("correlationId"));
+            .doFinally(_ -> MDC.remove("correlationId"));
     }
 }

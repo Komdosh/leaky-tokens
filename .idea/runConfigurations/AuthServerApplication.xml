@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AuthServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+    <option name="ACTIVE_PROFILES" value="develop" />
+    <option name="ALTERNATIVE_JRE_PATH" value="25" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <module name="leaky-tokens.auth-server.main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.leaky.tokens.authserver.AuthServerApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

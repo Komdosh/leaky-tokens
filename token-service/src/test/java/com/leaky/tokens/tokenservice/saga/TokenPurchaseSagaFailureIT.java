@@ -61,7 +61,7 @@ class TokenPurchaseSagaFailureIT extends TokenServiceIntegrationTestBase {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = sagaService.start(request, tier, null);
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
 
         List<TokenOutboxEntry> outboxEntries = outboxRepository.findAll();
         List<String> eventTypes = outboxEntries.stream().map(TokenOutboxEntry::getEventType).toList();

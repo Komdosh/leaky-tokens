@@ -58,7 +58,7 @@ class TokenPurchaseSagaServiceTest {
 
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, null);
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
 
         ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
         verify(outboxRepository, times(4)).save(outboxCaptor.capture());
@@ -104,7 +104,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, "idem-1");
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
         verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
         verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
     }
@@ -195,7 +195,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, null);
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
 
         ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
         verify(outboxRepository, times(4)).save(outboxCaptor.capture());
@@ -239,7 +239,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, "idem-1");
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.STARTED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.STARTED);
         verify(quotaService, times(0)).addTokens(any(), any(), anyLong(), any());
     }
 
@@ -304,7 +304,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, null);
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
         verify(quotaService, times(1)).addOrgTokens(eq(UUID.fromString("00000000-0000-0000-0000-000000000010")),
             eq("openai"),
             eq(8L),
@@ -344,7 +344,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, "idem-2");
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
         verify(quotaService, times(0)).addOrgTokens(any(), any(), anyLong(), any());
         verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
     }
@@ -374,7 +374,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, null);
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
         ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
         verify(outboxRepository, times(4)).save(outboxCaptor.capture());
         List<String> eventTypes = outboxCaptor.getAllValues().stream()
@@ -418,7 +418,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, "idem-org");
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.STARTED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.STARTED);
         verify(quotaService, times(0)).addOrgTokens(any(), any(), anyLong(), any());
     }
 
@@ -514,7 +514,7 @@ class TokenPurchaseSagaServiceTest {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = service.start(request, tier, "   ");
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
         verify(sagaRepository, times(0)).findByIdempotencyKey(any());
         verify(outboxRepository, times(4)).save(any(TokenOutboxEntry.class));
     }

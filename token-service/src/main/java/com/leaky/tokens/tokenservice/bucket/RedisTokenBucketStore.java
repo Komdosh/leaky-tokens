@@ -2,21 +2,17 @@ package com.leaky.tokens.tokenservice.bucket;
 
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "token.bucket", name = "store", havingValue = "redis")
 public class RedisTokenBucketStore implements TokenBucketStore {
     private final RedisTemplate<String, TokenBucketState> redisTemplate;
     private final TokenBucketProperties properties;
-
-    public RedisTokenBucketStore(RedisTemplate<String, TokenBucketState> redisTemplate,
-                                 TokenBucketProperties properties) {
-        this.redisTemplate = redisTemplate;
-        this.properties = properties;
-    }
 
     @Override
     public TokenBucketState load(TokenBucketKey key, Instant now) {

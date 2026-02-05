@@ -276,7 +276,7 @@ gateway:
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/token_service
+    url: jdbc:postgresql://localhost:5432/token_db
     username: leaky_user
     password: ${DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
@@ -559,7 +559,7 @@ spring:
       on-profile: dev
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/token_service_dev
+    url: jdbc:postgresql://localhost:5432/token_db
     
   jpa:
     hibernate:
@@ -645,7 +645,7 @@ spring:
       on-profile: docker
   
   datasource:
-    url: jdbc:postgresql://postgres:5432/token_service
+    url: jdbc:postgresql://postgres:5432/token_db
   
   redis:
     host: redis

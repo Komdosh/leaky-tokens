@@ -24,6 +24,10 @@ dependencies {
     // Spring Data JPA
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+    // Load balancer cache (Caffeine)
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("com.github.ben-manes.caffeine:caffeine")
+
     // Actuator + Prometheus
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-prometheus")
@@ -32,6 +36,8 @@ dependencies {
 
     // Flyway for migrations
     implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql:12.0.0")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     
     // PostgreSQL Driver
     runtimeOnly("org.postgresql:postgresql")

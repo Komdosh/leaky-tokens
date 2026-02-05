@@ -5,25 +5,17 @@ import java.time.Instant;
 import com.leaky.tokens.tokenservice.events.TokenUsageEventFactory;
 import com.leaky.tokens.tokenservice.events.TokenUsagePublisher;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class TokenBucketService {
     private final TokenBucketProperties properties;
     private final TokenBucketStore store;
     private final TokenUsagePublisher publisher;
     private final TokenUsageEventFactory eventFactory;
     private final TokenBucketEngine engine = new TokenBucketEngine();
-
-    public TokenBucketService(TokenBucketProperties properties,
-                              TokenBucketStore store,
-                              TokenUsagePublisher publisher,
-                              TokenUsageEventFactory eventFactory) {
-        this.properties = properties;
-        this.store = store;
-        this.publisher = publisher;
-        this.eventFactory = eventFactory;
-    }
 
     public TokenBucketResult consume(String userId, String provider, long tokens) {
         TokenBucketKey key = new TokenBucketKey(userId, provider);

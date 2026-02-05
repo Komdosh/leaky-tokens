@@ -5,12 +5,15 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./config-server/src/main/resources/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#      - ./config-server/src/main/resources/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./config-server/src/main/resources/config/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - ./config-server/src/main/resources/config/prometheus/prometheus-develop.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   grafana:

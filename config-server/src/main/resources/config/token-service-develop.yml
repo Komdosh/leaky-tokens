@@ -1,17 +1,22 @@
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/token_db
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:password}
+
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: localhost:9092
 
   data:
     redis:
-      host: redis
+      host: localhost
       port: 6379
 
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://auth-server:8081/oauth2/jwks
+          jwk-set-uri: http://localhost:8081/oauth2/jwks
 
   flyway:
     enabled: true
@@ -55,11 +60,11 @@ feature:
 
 providers:
   qwen:
-    base-url: http://qwen-stub:8091
+    base-url: http://localhost:8091
   gemini:
-    base-url: http://gemini-stub:8092
+    base-url: http://localhost:8092
   openai:
-    base-url: http://openai-stub:8093
+    base-url: http://localhost:8093
 
 resilience4j:
   circuitbreaker:

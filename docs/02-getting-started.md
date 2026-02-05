@@ -73,6 +73,31 @@ docker exec redis-cache redis-cli ping
 docker exec kafka-broker kafka-topics --bootstrap-server localhost:9092 --list
 ```
 
+Connect to the postgres and create a DB if needed:
+
+PostgreSQL:
+
+```postgresql
+create database auth_db;
+create database token_db;
+```
+
+Cassandra:
+
+```cassandraql
+CREATE KEYSPACE analytics_keyspace
+    WITH REPLICATION = {
+        'class' : 'SimpleStrategy',
+        'replication_factor' : 1
+        };
+```
+
+Kafka
+
+```
+docker compose exec kafka kafka-topics --create --if-not-exists --partitions 1 --replication-factor 1 --topic token-usage --bootstrap-server localhost:9092
+```
+
 ### Step 3: Build the Project
 
 ```bash
@@ -114,19 +139,19 @@ Open separate terminal windows for each service:
 # Terminal 3: Auth Server
 ./gradlew :auth-server:bootRun
 
-# Terminal 4: Token Service
-./gradlew :token-service:bootRun
-
-# Terminal 5: Analytics Service
-./gradlew :analytics-service:bootRun
-
-# Terminal 6: API Gateway
-./gradlew :api-gateway:bootRun
-
-# Terminal 7-9: Provider Stubs (optional)
+# Terminal 4: Provider Stubs
 ./gradlew :qwen-stub:bootRun
 ./gradlew :gemini-stub:bootRun
 ./gradlew :openai-stub:bootRun
+
+# Terminal 5: Token Service
+./gradlew :token-service:bootRun
+
+# Terminal 6: Analytics Service
+./gradlew :analytics-service:bootRun
+
+# Terminal 7: API Gateway
+./gradlew :api-gateway:bootRun
 ```
 
 **Start order matters:**

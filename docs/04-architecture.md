@@ -370,7 +370,7 @@ eureka:
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/token_service
+    url: jdbc:postgresql://localhost:5432/token_db
     username: leaky_user
     password: ${DB_PASSWORD}
 ```
@@ -608,7 +608,7 @@ version: '3.8'
 services:
   # Infrastructure
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: leaky_user
       POSTGRES_PASSWORD: ${DB_PASSWORD}

@@ -61,7 +61,7 @@ class TokenPurchaseSagaSuccessIT extends TokenServiceIntegrationTestBase {
         TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
         TokenPurchaseResponse response = sagaService.start(request, tier, null);
 
-        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
 
         List<TokenOutboxEntry> outboxEntries = outboxRepository.findAll();
         List<String> eventTypes = outboxEntries.stream().map(TokenOutboxEntry::getEventType).toList();

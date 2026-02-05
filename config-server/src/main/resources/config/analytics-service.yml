@@ -6,6 +6,8 @@ analytics:
   token-usage:
     topic: token-usage
     group: analytics-service
+    enabled: true
+    auto-offset-reset: earliest
   report:
     default-window-minutes: 60
     max-window-minutes: 1440

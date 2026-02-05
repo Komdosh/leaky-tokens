@@ -1,11 +1,7 @@
 package com.leaky.tokens.tokenservice.outbox;
 
-import java.time.Instant;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -13,8 +9,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
+
 @Component
-@ConditionalOnBean(KafkaTemplate.class)
 public class OutboxPublisherJob {
     private static final Logger logger = LoggerFactory.getLogger(OutboxPublisherJob.class);
 
@@ -36,10 +34,13 @@ public class OutboxPublisherJob {
     @Scheduled(fixedDelayString = "${token.outbox.poll-interval-ms:2000}")
     @Transactional
     public void publishBatch() {
+        logger.info("Checking for unpublished outbox entries");
         List<TokenOutboxEntry> entries = repository.findUnpublished(PageRequest.of(0, batchSize));
         if (entries.isEmpty()) {
             return;
         }
+
+        logger.info("Publishing batch of {} outbox entries", entries.size());
 
         for (TokenOutboxEntry entry : entries) {
             try {

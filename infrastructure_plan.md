@@ -89,7 +89,7 @@ services:
 
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: postgres-db
     ports:
       - "5432:5432"
@@ -147,7 +147,7 @@ services:
 
   # Apache Cassandra
   cassandra:
-    image: cassandra:4.0
+    image: cassandra:5.0.1
     container_name: cassandra-db
     ports:
       - "9042:9042"

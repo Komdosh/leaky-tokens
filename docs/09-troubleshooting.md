@@ -244,7 +244,7 @@ org.postgresql.util.PSQLException: Connection refused
    ```yaml
    spring:
      datasource:
-       url: jdbc:postgresql://localhost:5432/token_service
+       url: jdbc:postgresql://localhost:5432/token_db
        username: leaky_user
        password: ${DB_PASSWORD:password}
    ```

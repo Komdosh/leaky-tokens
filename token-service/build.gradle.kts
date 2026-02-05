@@ -48,7 +48,8 @@ dependencies {
 
     // Flyway for migrations
     implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql:11.14.1")
+    implementation("org.flywaydb:flyway-database-postgresql:12.0.0")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // Testcontainers for integration tests
     testImplementation("org.testcontainers:junit-jupiter:1.20.6")

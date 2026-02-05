@@ -58,9 +58,10 @@ curl -X POST http://localhost:8081/api/v1/auth/login \
 **Using the token:**
 ```bash
 export JWT_TOKEN="eyJhbGciOiJSUzI1NiIs..."
+export USER_ID="550e8400-e29b-41d4-a716-446655440000"
 
 # Use in subsequent requests
-curl http://localhost:8082/api/v1/tokens/quota \
+curl http://localhost:8082/api/v1/tokens/quota?userId={{USER_ID}}&provider=openai \
   -H "Authorization: Bearer $JWT_TOKEN"
 ```
 
@@ -75,7 +76,7 @@ curl -X POST http://localhost:8081/api/v1/auth/api-keys \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "userId": "'+$USER_ID+'",
     "name": "production-api-key",
     "expiresAt": "2026-12-31T23:59:59Z"
   }'
@@ -85,7 +86,7 @@ curl -X POST http://localhost:8081/api/v1/auth/api-keys \
 ```json
 {
   "id": "660e8400-e29b-41d4-a716-446655440001",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "userId": "$USER_ID",
   "name": "production-api-key",
   "createdAt": "2026-02-05T12:00:00Z",
   "expiresAt": "2026-12-31T23:59:59Z",
@@ -111,7 +112,7 @@ curl http://localhost:8080/api/v1/tokens/status \
 ### List Your API Keys
 
 ```bash
-curl "http://localhost:8081/api/v1/auth/api-keys?userId=550e8400-e29b-41d4-a716-446655440000" \
+curl "http://localhost:8081/api/v1/auth/api-keys?userId=$USER_ID" \
   -H "Authorization: Bearer $JWT_TOKEN"
 ```
 
@@ -132,7 +133,7 @@ curl "http://localhost:8081/api/v1/auth/api-keys?userId=550e8400-e29b-41d4-a716-
 ### Revoke an API Key
 
 ```bash
-curl -X DELETE "http://localhost:8081/api/v1/auth/api-keys?userId=550e8400-e29b-41d4-a716-446655440000&apiKeyId=660e8400-e29b-41d4-a716-446655440001" \
+curl -X DELETE "http://localhost:8081/api/v1/auth/api-keys?userId=$USER_ID&apiKeyId=660e8400-e29b-41d4-a716-446655440001" \
   -H "Authorization: Bearer $JWT_TOKEN"
 ```
 
@@ -152,14 +153,14 @@ curl http://localhost:8080/api/v1/tokens/status \
 ### Check User Quota
 
 ```bash
-curl "http://localhost:8082/api/v1/tokens/quota?userId=550e8400-e29b-41d4-a716-446655440000&provider=openai" \
+curl "http://localhost:8082/api/v1/tokens/quota?userId=$USER_ID&provider=openai" \
   -H "Authorization: Bearer $JWT_TOKEN"
 ```
 
 **Response:**
 ```json
 {
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "userId": "$USER_ID",
   "provider": "openai",
   "totalTokens": 1000,
   "remainingTokens": 850,
@@ -204,7 +205,7 @@ curl -X POST http://localhost:8082/api/v1/tokens/consume \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "userId": "'+$USER_ID+'",
     "provider": "openai",
     "tokens": 50,
     "prompt": "Explain quantum computing in simple terms"
@@ -237,7 +238,7 @@ curl -X POST http://localhost:8082/api/v1/tokens/consume \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "userId": "'+$USER_ID+'",
     "orgId": "10000000-0000-0000-0000-000000000001",
     "provider": "openai",
     "tokens": 100,
@@ -308,7 +309,7 @@ curl -X POST http://localhost:8082/api/v1/tokens/purchase \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -H "Idempotency-Key: purchase-001" \
   -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "userId": "'+$USER_ID+'",
     "provider": "openai",
     "tokens": 1000
   }'
@@ -334,7 +335,7 @@ curl http://localhost:8082/api/v1/tokens/purchase/770e8400-e29b-41d4-a716-446655
 ```json
 {
   "id": "770e8400-e29b-41d4-a716-446655440002",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "userId": "$USER_ID",
   "orgId": null,
   "provider": "openai",
   "tokens": 1000,
@@ -385,7 +386,7 @@ curl "http://localhost:8083/api/v1/analytics/usage?provider=openai&limit=20" \
         "provider": "openai",
         "timestamp": "2026-02-05T13:00:00Z"
       },
-      "userId": "550e8400-e29b-41d4-a716-446655440000",
+      "userId": "$USER_ID",
       "tokens": 50,
       "allowed": true
     }
@@ -414,7 +415,7 @@ curl "http://localhost:8083/api/v1/analytics/report?provider=openai&windowMinute
   "uniqueUsers": 10,
   "topUsers": [
     {
-      "userId": "550e8400-e29b-41d4-a716-446655440000",
+      "userId": "$USER_ID",
       "totalTokens": 500,
       "events": 20
     }
@@ -466,7 +467,7 @@ curl http://localhost:8080/api/v1/tokens/status \
   -H "X-Api-Key: $API_KEY"
 
 # Check quota
-curl "http://localhost:8080/api/v1/tokens/quota?userId=550e8400-e29b-41d4-a716-446655440000&provider=openai" \
+curl "http://localhost:8080/api/v1/tokens/quota?userId=$USER_ID&provider=openai" \
   -H "X-Api-Key: $API_KEY"
 
 # Consume tokens
@@ -474,7 +475,7 @@ curl -X POST http://localhost:8080/api/v1/tokens/consume \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: $API_KEY" \
   -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "userId": "'+$USER_ID+'",
     "provider": "openai",
     "tokens": 25,
     "prompt": "Hello"
@@ -488,7 +489,7 @@ export JWT_TOKEN="eyJhbGciOiJSUzI1NiIs..."
 
 curl http://localhost:8080/api/v1/tokens/quota \
   -H "Authorization: Bearer $JWT_TOKEN" \
-  -G -d "userId=550e8400-e29b-41d4-a716-446655440000" \
+  -G -d "userId=$USER_ID" \
   -d "provider=openai"
 ```
 

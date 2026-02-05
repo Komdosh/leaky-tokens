@@ -4,9 +4,13 @@ import java.time.Instant;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
+@AllArgsConstructor
 public class AnalyticsReportResponse {
     @Schema(example = "openai")
     private String provider;
@@ -30,29 +34,5 @@ public class AnalyticsReportResponse {
     private int sampleLimit;
     @Schema(description = "Top users by token usage in the reporting window")
     private List<UserUsageSummary> topUsers;
-
-    public AnalyticsReportResponse(String provider,
-                                   Instant windowStart,
-                                   Instant windowEnd,
-                                   int totalEvents,
-                                   int allowedEvents,
-                                   int deniedEvents,
-                                   long totalTokens,
-                                   double averageTokensPerEvent,
-                                   int uniqueUsers,
-                                   int sampleLimit,
-                                   List<UserUsageSummary> topUsers) {
-        this.provider = provider;
-        this.windowStart = windowStart;
-        this.windowEnd = windowEnd;
-        this.totalEvents = totalEvents;
-        this.allowedEvents = allowedEvents;
-        this.deniedEvents = deniedEvents;
-        this.totalTokens = totalTokens;
-        this.averageTokensPerEvent = averageTokensPerEvent;
-        this.uniqueUsers = uniqueUsers;
-        this.sampleLimit = sampleLimit;
-        this.topUsers = topUsers;
-    }
 
 }

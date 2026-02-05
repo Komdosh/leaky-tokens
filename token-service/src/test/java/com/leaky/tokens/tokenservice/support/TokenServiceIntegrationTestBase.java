@@ -10,7 +10,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public abstract class TokenServiceIntegrationTestBase {
     @Container
     private static final PostgreSQLContainer<?> POSTGRES =
-        new PostgreSQLContainer<>("postgres:16-alpine")
+        new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("token_service")
             .withUsername("token")
             .withPassword("token");
