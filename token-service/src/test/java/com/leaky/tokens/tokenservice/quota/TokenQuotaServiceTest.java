@@ -182,6 +182,35 @@ class TokenQuotaServiceTest {
         assertThat(pool.getResetTime()).isNull();
     }
 
+    @Test
+    void reserveReturnsAllowedWhenTierCapNotPositive() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            100,
+            100,
+            Instant.now().plus(Duration.ofHours(1)),
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findForUpdate(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setQuotaMaxTokens(0L);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenQuotaReservation reservation = service.reserve(userId, "openai", 20, tier);
+
+        assertThat(reservation.allowed()).isTrue();
+        assertThat(reservation.remaining()).isEqualTo(80);
+    }
+
     private TokenQuotaProperties quotaProps() {
         TokenQuotaProperties properties = new TokenQuotaProperties();
         properties.setEnabled(true);
