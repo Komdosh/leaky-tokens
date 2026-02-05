@@ -41,6 +41,7 @@
 - Added gateway JWT decoder guard and quota cap boundary tests.
 - Added config-server and service-discovery tests (context + security headers).
 - Added rate limit AUTO key isolation test.
+- Added gateway auth converter and user header filter edge-case tests.
 
 ## Blocking / Known Issues
 - None currently.
