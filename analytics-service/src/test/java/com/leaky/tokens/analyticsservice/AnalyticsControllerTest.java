@@ -37,6 +37,21 @@ class AnalyticsControllerTest {
     }
 
     @Test
+    void healthIncludesTimestamp() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            Mockito.mock(AnalyticsReportService.class)
+        );
+
+        Map<String, Object> response = controller.health();
+
+        assertThat(response.get("timestamp")).isNotNull();
+        assertThat(Instant.parse(response.get("timestamp").toString())).isNotNull();
+    }
+
+    @Test
     void usageClampsLimitAndReturnsRecords() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
@@ -78,6 +93,22 @@ class AnalyticsControllerTest {
 
         verify(repository).findRecentByProvider(eq("openai"), eq(1));
         assertThat(response.get("count")).isEqualTo(0);
+    }
+
+    @Test
+    void usageUsesProvidedLimitWithinBounds() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            Mockito.mock(AnalyticsReportService.class)
+        );
+
+        when(repository.findRecentByProvider(eq("openai"), eq(50))).thenReturn(List.of());
+
+        controller.usage("openai", 50);
+
+        verify(repository).findRecentByProvider(eq("openai"), eq(50));
     }
 
     @Test

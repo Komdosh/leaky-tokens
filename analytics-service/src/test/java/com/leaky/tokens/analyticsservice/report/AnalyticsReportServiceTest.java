@@ -161,6 +161,69 @@ class AnalyticsReportServiceTest {
     }
 
     @Test
+    void buildReportUsesDefaultWindowWhenInvalid() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportProperties properties = new AnalyticsReportProperties();
+        properties.setDefaultWindowMinutes(30);
+        properties.setMaxWindowMinutes(120);
+        properties.setMaxLimit(100);
+
+        when(repository.findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(100)))
+            .thenReturn(List.of());
+
+        AnalyticsReportService service = new AnalyticsReportService(repository, properties);
+        AnalyticsReportResponse response = service.buildReport("openai", -5, null);
+
+        assertThat(Duration.between(response.getWindowStart(), response.getWindowEnd()).toMinutes())
+            .isBetween(29L, 31L);
+    }
+
+    @Test
+    void buildReportHandlesEmptyRecords() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportProperties properties = new AnalyticsReportProperties();
+        properties.setDefaultWindowMinutes(60);
+        properties.setMaxWindowMinutes(120);
+        properties.setMaxLimit(100);
+        properties.setMaxTopUsers(5);
+
+        when(repository.findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(100)))
+            .thenReturn(List.of());
+
+        AnalyticsReportService service = new AnalyticsReportService(repository, properties);
+        AnalyticsReportResponse response = service.buildReport("openai", null, null);
+
+        assertThat(response.getTotalEvents()).isEqualTo(0);
+        assertThat(response.getAllowedEvents()).isEqualTo(0);
+        assertThat(response.getDeniedEvents()).isEqualTo(0);
+        assertThat(response.getAverageTokensPerEvent()).isEqualTo(0.0);
+        assertThat(response.getTopUsers()).isEmpty();
+    }
+
+    @Test
+    void detectAnomalyUsesDefaultBaselineWhenNull() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportProperties properties = new AnalyticsReportProperties();
+        properties.setDefaultWindowMinutes(60);
+        properties.setMaxWindowMinutes(120);
+        properties.setMaxLimit(100);
+        properties.setDefaultBaselineWindows(2);
+        properties.setMaxBaselineWindows(4);
+        properties.setDefaultAnomalyThresholdMultiplier(2.0);
+
+        when(repository.findByProviderAndTimestampRange(eq("openai"), any(), any(), eq(100)))
+            .thenReturn(List.of(record("openai", "user-a", 200, true)))
+            .thenReturn(List.of(record("openai", "user-a", 100, true)))
+            .thenReturn(List.of(record("openai", "user-a", 100, true)));
+
+        AnalyticsReportService service = new AnalyticsReportService(repository, properties);
+        AnalyticsAnomalyResponse response = service.detectAnomaly("openai", 60, null, 2.0, 100);
+
+        assertThat(response.getBaselineWindows()).isEqualTo(2);
+        assertThat(response.isAnomaly()).isTrue();
+    }
+
+    @Test
     void buildReportLimitsTopUsersToMax() {
         TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
         AnalyticsReportProperties properties = new AnalyticsReportProperties();
