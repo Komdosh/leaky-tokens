@@ -313,6 +313,116 @@ class TokenPurchaseSagaServiceTest {
     }
 
     @Test
+    void returnsExistingSagaOnIdempotentOrgRequest() {
+        TokenPurchaseSaga existing = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            UUID.fromString("00000000-0000-0000-0000-000000000010"),
+            "openai",
+            8,
+            TokenPurchaseSagaStatus.COMPLETED
+        );
+        existing.setIdempotencyKey("idem-2");
+
+        when(sagaRepository.findByIdempotencyKey(eq("idem-2"))).thenReturn(Optional.of(existing));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setOrgId("00000000-0000-0000-0000-000000000010");
+        request.setProvider("openai");
+        request.setTokens(8);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, "idem-2");
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.COMPLETED);
+        verify(quotaService, times(0)).addOrgTokens(any(), any(), anyLong(), any());
+        verify(outboxRepository, times(0)).save(any(TokenOutboxEntry.class));
+    }
+
+    @Test
+    void emitsCompensationWhenOrgQuotaAllocationFails() {
+        when(sagaRepository.save(any(TokenPurchaseSaga.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(outboxRepository.save(any(TokenOutboxEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new RuntimeException("quota down"))
+            .when(quotaService).addOrgTokens(any(), any(), anyLong(), any());
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setOrgId("00000000-0000-0000-0000-000000000010");
+        request.setProvider("openai");
+        request.setTokens(8);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, null);
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.FAILED);
+        ArgumentCaptor<TokenOutboxEntry> outboxCaptor = ArgumentCaptor.forClass(TokenOutboxEntry.class);
+        verify(outboxRepository, times(4)).save(outboxCaptor.capture());
+        List<String> eventTypes = outboxCaptor.getAllValues().stream()
+            .map(TokenOutboxEntry::getEventType)
+            .toList();
+        assertThat(eventTypes).contains("TOKEN_PURCHASE_FAILED", "PAYMENT_RELEASE_REQUESTED");
+    }
+
+    @Test
+    void returnsExistingSagaWhenSavedConflictMatchesOrgRequest() {
+        TokenPurchaseSaga existing = new TokenPurchaseSaga(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            UUID.fromString("00000000-0000-0000-0000-000000000010"),
+            "openai",
+            5,
+            TokenPurchaseSagaStatus.STARTED
+        );
+        existing.setIdempotencyKey("idem-org");
+
+        when(sagaRepository.save(any(TokenPurchaseSaga.class)))
+            .thenThrow(new DataIntegrityViolationException("duplicate key"));
+        when(sagaRepository.findByIdempotencyKey(eq("idem-org")))
+            .thenReturn(Optional.empty(), Optional.of(existing));
+
+        TokenPurchaseSagaService service = new TokenPurchaseSagaService(
+            sagaRepository,
+            outboxRepository,
+            quotaService,
+            new ObjectMapper(),
+            false,
+            enabledFlags()
+        );
+
+        TokenPurchaseRequest request = new TokenPurchaseRequest();
+        request.setUserId("00000000-0000-0000-0000-000000000001");
+        request.setOrgId("00000000-0000-0000-0000-000000000010");
+        request.setProvider("openai");
+        request.setTokens(5);
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        TokenPurchaseResponse response = service.start(request, tier, "idem-org");
+
+        assertThat(response.getStatus()).isEqualTo(TokenPurchaseSagaStatus.STARTED);
+        verify(quotaService, times(0)).addOrgTokens(any(), any(), anyLong(), any());
+    }
+
+    @Test
     void recoveryMarksStaleSagas() {
         TokenPurchaseSaga started = new TokenPurchaseSaga(
             UUID.randomUUID(),
