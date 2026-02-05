@@ -108,6 +108,32 @@ class AuthControllerTest {
     }
 
     @Test
+    void loginReturnsOkOnSuccess() throws Exception {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+
+        UUID userId = UUID.randomUUID();
+        when(authService.login(any(LoginRequest.class)))
+            .thenReturn(new AuthResponse(userId, "alice", "token", List.of("USER")));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, apiKeyService, metrics)).build();
+
+        LoginRequest request = new LoginRequest();
+        request.setUsername("alice");
+        request.setPassword("secret");
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.username").value("alice"))
+            .andExpect(jsonPath("$.roles[0]").value("USER"));
+
+        verify(metrics).loginSuccess();
+    }
+
+    @Test
     void createApiKeyReturnsCreated() throws Exception {
         AuthService authService = Mockito.mock(AuthService.class);
         ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
@@ -132,6 +158,28 @@ class AuthControllerTest {
     }
 
     @Test
+    void createApiKeyReturnsBadRequestOnInvalidInput() throws Exception {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+
+        when(apiKeyService.create(any(ApiKeyCreateRequest.class)))
+            .thenThrow(new IllegalArgumentException("invalid request"));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, apiKeyService, metrics)).build();
+
+        ApiKeyCreateRequest request = new ApiKeyCreateRequest();
+        request.setUserId("bad-id");
+        request.setName("cli");
+
+        mockMvc.perform(post("/api/v1/auth/api-keys")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("invalid request"));
+    }
+
+    @Test
     void listApiKeysRejectsMissingUserId() throws Exception {
         AuthService authService = Mockito.mock(AuthService.class);
         ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
@@ -141,6 +189,20 @@ class AuthControllerTest {
 
         mockMvc.perform(get("/api/v1/auth/api-keys"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listApiKeysRejectsInvalidUserId() throws Exception {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, apiKeyService, metrics)).build();
+
+        mockMvc.perform(get("/api/v1/auth/api-keys")
+                .param("userId", "not-a-uuid"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("invalid userId"));
     }
 
     @Test
@@ -162,6 +224,36 @@ class AuthControllerTest {
     }
 
     @Test
+    void revokeApiKeyRejectsMissingUserId() throws Exception {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, apiKeyService, metrics)).build();
+
+        mockMvc.perform(delete("/api/v1/auth/api-keys")
+                .param("userId", " ")
+                .param("apiKeyId", UUID.randomUUID().toString()))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("userId is required"));
+    }
+
+    @Test
+    void revokeApiKeyRejectsMissingApiKeyId() throws Exception {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, apiKeyService, metrics)).build();
+
+        mockMvc.perform(delete("/api/v1/auth/api-keys")
+                .param("userId", UUID.randomUUID().toString())
+                .param("apiKeyId", " "))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("apiKeyId is required"));
+    }
+
+    @Test
     void revokeApiKeyRejectsInvalidIds() throws Exception {
         AuthService authService = Mockito.mock(AuthService.class);
         ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
@@ -171,9 +263,24 @@ class AuthControllerTest {
 
         mockMvc.perform(delete("/api/v1/auth/api-keys")
                 .param("userId", "not-a-uuid")
-                .param("apiKeyId", "also-bad"))
+            .param("apiKeyId", "also-bad"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("Invalid UUID string: not-a-uuid"));
+    }
+
+    @Test
+    void validateApiKeyReturnsUnauthorizedWhenMissingHeader() throws Exception {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+
+        when(apiKeyService.validate(eq(null))).thenThrow(new IllegalArgumentException("api key is required"));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, apiKeyService, metrics)).build();
+
+        mockMvc.perform(get("/api/v1/auth/api-keys/validate"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.message").value("api key is required"));
     }
 
     @Test
