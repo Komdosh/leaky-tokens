@@ -36,6 +36,7 @@
 - Added saga recovery disable-path test.
 - Added rate-limit cleanup, quota reset-disabled, and baseline clamp tests.
 - Added gateway web filter header/correlation tests.
+- Added API key authentication manager tests (cache hit/miss/failure).
 
 ## Blocking / Known Issues
 - None currently.
