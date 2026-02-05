@@ -1,15 +1,20 @@
 package com.leaky.tokens.tokenservice;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import com.leaky.tokens.tokenservice.bucket.TokenBucketProperties;
 import com.leaky.tokens.tokenservice.bucket.TokenBucketResult;
@@ -22,6 +27,7 @@ import com.leaky.tokens.tokenservice.provider.ProviderRequest;
 import com.leaky.tokens.tokenservice.provider.ProviderResponse;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaReservation;
 import com.leaky.tokens.tokenservice.quota.TokenQuotaService;
+import com.leaky.tokens.tokenservice.quota.TokenPool;
 import com.leaky.tokens.tokenservice.tier.TokenTierProperties;
 import com.leaky.tokens.tokenservice.tier.TokenTierResolver;
 import com.leaky.tokens.tokenservice.web.RateLimitHeadersFilter;
@@ -33,6 +39,151 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class TokenControllerTest {
+    @Test
+    void statusReturnsServiceAndTimestamp() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                mock(TokenBucketService.class),
+                mock(ProviderCallService.class),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).build();
+
+        mockMvc.perform(get("/api/v1/tokens/status"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.service").value("token-service"))
+            .andExpect(jsonPath("$.status").value("ok"))
+            .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void quotaRejectsMissingUserId() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                mock(TokenBucketService.class),
+                mock(ProviderCallService.class),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).build();
+
+        mockMvc.perform(get("/api/v1/tokens/quota")
+                .param("userId", " ")
+                .param("provider", "openai"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("userId is required"));
+    }
+
+    @Test
+    void quotaRejectsMissingProvider() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                mock(TokenBucketService.class),
+                mock(ProviderCallService.class),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).build();
+
+        mockMvc.perform(get("/api/v1/tokens/quota")
+                .param("userId", "00000000-0000-0000-0000-000000000001")
+                .param("provider", " "))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("provider is required"));
+    }
+
+    @Test
+    void quotaReturnsNotFoundWhenMissing() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        when(tierResolver.resolveTier()).thenReturn(new TokenTierProperties.TierConfig());
+        when(quotaService.getQuota(eq(UUID.fromString("00000000-0000-0000-0000-000000000001")), eq("openai"), any()))
+            .thenReturn(Optional.empty());
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                mock(TokenBucketService.class),
+                mock(ProviderCallService.class),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).build();
+
+        mockMvc.perform(get("/api/v1/tokens/quota")
+                .param("userId", "00000000-0000-0000-0000-000000000001")
+                .param("provider", "openai"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("quota not found"));
+    }
+
+    @Test
+    void quotaReturnsPoolData() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        when(tierResolver.resolveTier()).thenReturn(new TokenTierProperties.TierConfig());
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            "openai",
+            1000,
+            900,
+            Instant.now(),
+            Instant.now(),
+            Instant.now()
+        );
+        when(quotaService.getQuota(eq(UUID.fromString("00000000-0000-0000-0000-000000000001")), eq("openai"), any()))
+            .thenReturn(Optional.of(pool));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                mock(TokenBucketService.class),
+                mock(ProviderCallService.class),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).build();
+
+        mockMvc.perform(get("/api/v1/tokens/quota")
+                .param("userId", "00000000-0000-0000-0000-000000000001")
+                .param("provider", "openai"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalTokens").value(1000))
+            .andExpect(jsonPath("$.remainingTokens").value(900));
+    }
+
+    @Test
+    void orgQuotaRejectsInvalidOrgId() throws Exception {
+        TokenQuotaService quotaService = mock(TokenQuotaService.class);
+        TokenTierResolver tierResolver = mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+            new TokenController(
+                mock(TokenBucketService.class),
+                mock(ProviderCallService.class),
+                quotaService,
+                new TokenServiceMetrics(new SimpleMeterRegistry()),
+                tierResolver
+            )
+        ).build();
+
+        mockMvc.perform(get("/api/v1/tokens/quota/org")
+                .param("orgId", "bad")
+                .param("provider", "openai"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("invalid orgId"));
+    }
+
     @Test
     void consumeReturnsOkWhenAllowed() throws Exception {
         Instant now = Instant.parse("2026-02-03T10:00:00Z");
