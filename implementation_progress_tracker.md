@@ -44,6 +44,7 @@
 - Added gateway auth converter and user header filter edge-case tests.
 - Added gateway security config permit-all coverage.
 - Added gateway security config auth-required coverage.
+- Added gateway auth custom header coverage.
 
 ## Blocking / Known Issues
 - None currently.

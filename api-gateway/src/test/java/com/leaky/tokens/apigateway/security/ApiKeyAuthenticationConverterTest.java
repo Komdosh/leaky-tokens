@@ -44,4 +44,21 @@ class ApiKeyAuthenticationConverterTest {
         assertThat(token).isNotNull();
         assertThat(token.getCredentials()).isEqualTo("key-123");
     }
+
+    @Test
+    void respectsCustomHeaderName() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setHeaderName("X-Alt-Key");
+        ApiKeyAuthenticationConverter converter = new ApiKeyAuthenticationConverter(properties);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/")
+                .header("X-Alt-Key", "alt-key")
+                .build()
+        );
+
+        ApiKeyAuthenticationToken token = (ApiKeyAuthenticationToken) converter.convert(exchange).block();
+
+        assertThat(token).isNotNull();
+        assertThat(token.getCredentials()).isEqualTo("alt-key");
+    }
 }

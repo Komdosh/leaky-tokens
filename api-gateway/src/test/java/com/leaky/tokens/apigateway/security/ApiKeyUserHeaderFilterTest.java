@@ -42,6 +42,35 @@ class ApiKeyUserHeaderFilterTest {
     }
 
     @Test
+    void usesCustomHeaderNames() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setUserHeaderName("X-Alt-User");
+        properties.setRolesHeaderName("X-Alt-Roles");
+        properties.setHeaderName("X-Alt-Key");
+        ApiKeyUserHeaderFilter filter = new ApiKeyUserHeaderFilter(properties);
+
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/")
+                .header("X-Alt-Key", "raw-key")
+                .build()
+        );
+        ApiKeyAuthenticationToken authentication = new ApiKeyAuthenticationToken("raw-key", "user-2", List.of("USER"));
+        AtomicReference<org.springframework.http.HttpHeaders> headersRef = new AtomicReference<>();
+        WebFilterChain chain = ex -> {
+            headersRef.set(ex.getRequest().getHeaders());
+            return ex.getResponse().setComplete();
+        };
+
+        filter.filter(exchange, chain)
+            .contextWrite(ReactiveSecurityContextHolder.withSecurityContext(Mono.just(new SecurityContextImpl(authentication))))
+            .block();
+
+        assertThat(headersRef.get().getFirst("X-Alt-User")).isEqualTo("user-2");
+        assertThat(headersRef.get().getFirst("X-Alt-Roles")).isEqualTo("USER");
+        assertThat(headersRef.get().getFirst("X-Alt-Key")).isNull();
+    }
+
+    @Test
     void skipsWhenPrincipalBlank() {
         ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
         ApiKeyUserHeaderFilter filter = new ApiKeyUserHeaderFilter(properties);
