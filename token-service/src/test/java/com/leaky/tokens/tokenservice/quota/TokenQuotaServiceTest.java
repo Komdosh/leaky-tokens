@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -238,6 +239,135 @@ class TokenQuotaServiceTest {
 
         assertThat(reservation.allowed()).isTrue();
         assertThat(reservation.remaining()).isEqualTo(80);
+    }
+
+    @Test
+    void reserveRejectsWhenQuotaCapBelowRequestedTokens() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            100,
+            100,
+            Instant.now().plus(Duration.ofHours(1)),
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findForUpdate(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setQuotaMaxTokens(20L);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        TokenQuotaReservation reservation = service.reserve(userId, "openai", 30, tier);
+
+        assertThat(reservation.allowed()).isFalse();
+        assertThat(reservation.remaining()).isEqualTo(20);
+        verify(repository, never()).save(any(TokenPool.class));
+    }
+
+    @Test
+    void releaseCapsRemainingToTierLimit() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            200,
+            10,
+            Instant.now().plus(Duration.ofHours(1)),
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findForUpdate(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenTierProperties.TierConfig tier = new TokenTierProperties.TierConfig();
+        tier.setQuotaMaxTokens(50L);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        service.release(userId, "openai", 100, tier);
+
+        assertThat(pool.getRemainingTokens()).isEqualTo(50);
+    }
+
+    @Test
+    void getQuotaEnsuresResetTimeWhenMissing() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            100,
+            90,
+            null,
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findByUserIdAndProvider(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, quotaProps(), featureFlags());
+        service.getQuota(userId, "openai", null);
+
+        verify(repository).save(any(TokenPool.class));
+        assertThat(pool.getResetTime()).isNotNull();
+    }
+
+    @Test
+    void getQuotaSkipsResetWhenWindowInvalid() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+
+        UUID userId = UUID.randomUUID();
+        TokenPool pool = new TokenPool(
+            UUID.randomUUID(),
+            userId,
+            "openai",
+            100,
+            90,
+            null,
+            Instant.now(),
+            Instant.now()
+        );
+        when(repository.findByUserIdAndProvider(eq(userId), eq("openai"))).thenReturn(Optional.of(pool));
+
+        TokenQuotaProperties properties = new TokenQuotaProperties();
+        properties.setEnabled(true);
+        properties.setWindow(null);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, properties, featureFlags());
+        service.getQuota(userId, "openai", null);
+
+        verify(repository, never()).save(any(TokenPool.class));
+        assertThat(pool.getResetTime()).isNull();
+    }
+
+    @Test
+    void addTokensDoesNotSetResetWhenWindowInvalid() {
+        TokenPoolRepository repository = Mockito.mock(TokenPoolRepository.class);
+        OrgTokenPoolRepository orgRepository = Mockito.mock(OrgTokenPoolRepository.class);
+        when(repository.findForUpdate(any(), any())).thenReturn(Optional.empty());
+        when(repository.save(any(TokenPool.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TokenQuotaProperties properties = new TokenQuotaProperties();
+        properties.setEnabled(true);
+        properties.setWindow(null);
+
+        TokenQuotaService service = new TokenQuotaService(repository, orgRepository, properties, featureFlags());
+        TokenPool pool = service.addTokens(UUID.randomUUID(), "openai", 100, null);
+
+        assertThat(pool.getResetTime()).isNull();
     }
 
     private TokenQuotaProperties quotaProps() {

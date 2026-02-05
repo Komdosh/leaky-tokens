@@ -60,6 +60,64 @@ class TokenPurchaseSagaControllerTest {
     }
 
     @Test
+    void rejectsBlankProvider() throws Exception {
+        TokenPurchaseSagaService sagaService = Mockito.mock(TokenPurchaseSagaService.class);
+        TokenTierResolver tierResolver = Mockito.mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new TokenPurchaseSagaController(sagaService, tierResolver)).build();
+
+        mockMvc.perform(post("/api/v1/tokens/purchase")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"provider\":\" \",\"tokens\":10}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("provider is required"));
+    }
+
+    @Test
+    void rejectsNonPositiveTokens() throws Exception {
+        TokenPurchaseSagaService sagaService = Mockito.mock(TokenPurchaseSagaService.class);
+        TokenTierResolver tierResolver = Mockito.mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new TokenPurchaseSagaController(sagaService, tierResolver)).build();
+
+        mockMvc.perform(post("/api/v1/tokens/purchase")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"provider\":\"openai\",\"tokens\":0}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("tokens must be positive"));
+    }
+
+    @Test
+    void rejectsTrimmedLongIdempotencyKey() throws Exception {
+        TokenPurchaseSagaService sagaService = Mockito.mock(TokenPurchaseSagaService.class);
+        TokenTierResolver tierResolver = Mockito.mock(TokenTierResolver.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new TokenPurchaseSagaController(sagaService, tierResolver)).build();
+
+        String key = "   " + "k".repeat(101) + " ";
+        mockMvc.perform(post("/api/v1/tokens/purchase")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", key)
+                .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"provider\":\"openai\",\"tokens\":10}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("idempotency key too long"));
+    }
+
+    @Test
+    void returnsConflictOnIdempotencyCollision() throws Exception {
+        TokenPurchaseSagaService sagaService = Mockito.mock(TokenPurchaseSagaService.class);
+        TokenTierResolver tierResolver = Mockito.mock(TokenTierResolver.class);
+        when(tierResolver.resolveTier()).thenReturn(new TokenTierProperties.TierConfig());
+        when(sagaService.start(any(TokenPurchaseRequest.class), any(TokenTierProperties.TierConfig.class), any()))
+            .thenThrow(new IdempotencyConflictException("purchase already processed"));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new TokenPurchaseSagaController(sagaService, tierResolver)).build();
+
+        mockMvc.perform(post("/api/v1/tokens/purchase")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userId\":\"00000000-0000-0000-0000-000000000001\",\"provider\":\"openai\",\"tokens\":10}"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message").value("purchase already processed"));
+    }
+
+    @Test
     void returnsAcceptedOnSuccess() throws Exception {
         TokenPurchaseSagaService sagaService = Mockito.mock(TokenPurchaseSagaService.class);
         TokenTierResolver tierResolver = Mockito.mock(TokenTierResolver.class);

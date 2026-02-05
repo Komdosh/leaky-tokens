@@ -47,6 +47,8 @@
 - Added gateway auth custom header coverage.
 - Added gateway security header and rate limit header assertions.
 - Added token saga blank idempotency and quota disabled pool tests.
+- Added token saga controller validation/error-path tests (provider/tokens/idempotency/conflict).
+- Added quota service edge-case tests (cap rejection, release cap, reset time, invalid window).
 
 ## Blocking / Known Issues
 - None currently.
