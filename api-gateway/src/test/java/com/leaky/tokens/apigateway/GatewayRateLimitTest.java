@@ -235,6 +235,36 @@ class GatewayRateLimitTest {
         assertThat(userTwo.getStatus().value()).isEqualTo(200);
     }
 
+    @Test
+    void autoStrategyUsesApiKeyToIsolateCounters() {
+        webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+
+        for (int i = 0; i < 5; i++) {
+            webTestClient.get()
+                .uri("/api/v1/misc/ping")
+                .header("X-Api-Key", "key-a")
+                .exchange()
+                .expectStatus().isOk();
+        }
+
+        webTestClient.get()
+            .uri("/api/v1/misc/ping")
+            .header("X-Api-Key", "key-a")
+            .exchange()
+            .expectStatus().isEqualTo(429);
+
+        EntityExchangeResult<String> second = webTestClient.get()
+            .uri("/api/v1/misc/ping")
+            .header("X-Api-Key", "key-b")
+            .exchange()
+            .expectBody(String.class)
+            .returnResult();
+
+        assertThat(second.getStatus().value()).isEqualTo(200);
+    }
+
     private static HttpServerRoutes tokenRoutes(HttpServerRoutes routes) {
         return routes.post("/api/v1/tokens/consume", (request, response) -> respondOk(response));
     }
