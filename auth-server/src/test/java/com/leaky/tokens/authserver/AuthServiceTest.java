@@ -107,6 +107,44 @@ class AuthServiceTest {
     }
 
     @Test
+    void loginRejectsUnknownUser() {
+        UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
+        RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
+        PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        JwtService jwtService = Mockito.mock(JwtService.class);
+
+        when(userRepository.findByUsername(eq("alice"))).thenReturn(Optional.empty());
+
+        AuthService authService = new AuthService(userRepository, roleRepository, passwordEncoder, jwtService);
+
+        LoginRequest request = new LoginRequest();
+        request.setUsername("alice");
+        request.setPassword("secret");
+
+        assertThatThrownBy(() -> authService.login(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("invalid credentials");
+    }
+
+    @Test
+    void loginRejectsMissingUsernameOrPassword() {
+        UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
+        RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
+        PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        JwtService jwtService = Mockito.mock(JwtService.class);
+
+        AuthService authService = new AuthService(userRepository, roleRepository, passwordEncoder, jwtService);
+
+        LoginRequest request = new LoginRequest();
+        request.setUsername(" ");
+        request.setPassword(" ");
+
+        assertThatThrownBy(() -> authService.login(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("username and password are required");
+    }
+
+    @Test
     void registerRejectsDuplicateUsername() {
         UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
         RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
@@ -151,6 +189,53 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.register(request))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("email already exists");
+    }
+
+    @Test
+    void registerCreatesDefaultRoleWhenMissing() {
+        UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
+        RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
+        PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        JwtService jwtService = Mockito.mock(JwtService.class);
+
+        when(userRepository.findByUsername(eq("alice"))).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(eq("alice@example.com"))).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(eq("secret"))).thenReturn("hashed");
+        when(jwtService.issueToken(any(UserAccount.class))).thenReturn("token-123");
+        when(roleRepository.findByName(eq("USER"))).thenReturn(Optional.empty());
+        when(roleRepository.save(any(Role.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthService authService = new AuthService(userRepository, roleRepository, passwordEncoder, jwtService);
+
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername("alice");
+        request.setEmail("alice@example.com");
+        request.setPassword("secret");
+
+        AuthResponse response = authService.register(request);
+
+        assertThat(response.roles()).containsExactly("USER");
+        verify(roleRepository).save(any(Role.class));
+    }
+
+    @Test
+    void registerRejectsMissingUsernameOrEmail() {
+        UserAccountRepository userRepository = Mockito.mock(UserAccountRepository.class);
+        RoleRepository roleRepository = Mockito.mock(RoleRepository.class);
+        PasswordEncoder passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        JwtService jwtService = Mockito.mock(JwtService.class);
+
+        AuthService authService = new AuthService(userRepository, roleRepository, passwordEncoder, jwtService);
+
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername(null);
+        request.setEmail(null);
+        request.setPassword("secret");
+
+        assertThatThrownBy(() -> authService.register(request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("username, email, and password are required");
     }
 
     @Test

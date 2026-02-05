@@ -56,6 +56,60 @@ class ApiKeyServiceTest {
     }
 
     @Test
+    void createRejectsMissingUserId() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        ApiKeyCreateRequest request = new ApiKeyCreateRequest();
+        request.setUserId(" ");
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("userId is required");
+
+        verify(metrics).apiKeyCreateFailure("invalid");
+    }
+
+    @Test
+    void createRejectsInvalidUserId() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        ApiKeyCreateRequest request = new ApiKeyCreateRequest();
+        request.setUserId("not-a-uuid");
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("invalid userId");
+
+        verify(metrics).apiKeyCreateFailure("invalid");
+    }
+
+    @Test
+    void createRejectsMissingUser() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        UUID userId = UUID.randomUUID();
+        when(userAccountRepository.findById(eq(userId))).thenReturn(Optional.empty());
+
+        ApiKeyCreateRequest request = new ApiKeyCreateRequest();
+        request.setUserId(userId.toString());
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("user not found");
+
+        verify(metrics).apiKeyCreateFailure("invalid");
+    }
+
+    @Test
     void validateReturnsRoles() throws Exception {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
@@ -80,6 +134,26 @@ class ApiKeyServiceTest {
     }
 
     @Test
+    void validateReturnsEmptyRolesWhenUserMissing() throws Exception {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        UUID userId = UUID.randomUUID();
+        String rawKey = "leaky_" + userId + "_raw";
+        String hashed = hash(rawKey);
+
+        ApiKey apiKey = new ApiKey(UUID.randomUUID(), userId, hashed, "cli", Instant.now(), null);
+        when(apiKeyRepository.findByKeyValue(eq(hashed))).thenReturn(Optional.of(apiKey));
+        when(userAccountRepository.findById(eq(userId))).thenReturn(Optional.empty());
+
+        ApiKeyValidationResponse response = service.validate(rawKey);
+
+        assertThat(response.roles()).isEmpty();
+    }
+
+    @Test
     void validateRejectsExpiredKey() throws Exception {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
@@ -91,18 +165,34 @@ class ApiKeyServiceTest {
         String hashed = hash(rawKey);
 
         ApiKey apiKey = new ApiKey(
-            UUID.randomUUID(),
-            userId,
-            hashed,
-            "cli",
-            Instant.now().minusSeconds(10),
-            Instant.now().minusSeconds(5)
+                UUID.randomUUID(),
+                userId,
+                hashed,
+                "cli",
+                Instant.now().minusSeconds(10),
+                Instant.now().minusSeconds(5)
         );
         when(apiKeyRepository.findByKeyValue(eq(hashed))).thenReturn(Optional.of(apiKey));
 
         assertThatThrownBy(() -> service.validate(rawKey))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("api key expired");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("api key expired");
+    }
+
+    @Test
+    void validateRejectsInvalidKey() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        when(apiKeyRepository.findByKeyValue(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.validate("leaky_bad_key"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("invalid api key");
+
+        verify(metrics).apiKeyValidateFailure("invalid");
     }
 
     @Test
@@ -113,8 +203,8 @@ class ApiKeyServiceTest {
         ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
 
         assertThatThrownBy(() -> service.validate(" "))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("api key is required");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("api key is required");
     }
 
     @Test
@@ -131,7 +221,7 @@ class ApiKeyServiceTest {
         List<ApiKeySummary> summaries = service.list(userId);
 
         assertThat(summaries).hasSize(1);
-        assertThat(summaries.get(0).name()).isEqualTo("cli");
+        assertThat(summaries.getFirst().name()).isEqualTo("cli");
     }
 
     @Test
@@ -149,6 +239,22 @@ class ApiKeyServiceTest {
         service.revoke(userId, keyId);
 
         verify(apiKeyRepository).delete(eq(apiKey));
+    }
+
+    @Test
+    void revokeRejectsMissingKey() {
+        ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
+        UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+
+        UUID userId = UUID.randomUUID();
+        UUID keyId = UUID.randomUUID();
+        when(apiKeyRepository.findByIdAndUserId(eq(keyId), eq(userId))).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.revoke(userId, keyId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("api key not found");
     }
 
     private String hash(String rawKey) throws Exception {

@@ -1,3 +1,7 @@
+import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     java
     id("org.springframework.boot") version "4.0.2" apply false
@@ -15,6 +19,7 @@ subprojects {
     apply(plugin = "org.springframework.boot")
     apply(plugin = "io.spring.dependency-management")
     apply(plugin = "java")
+    apply(plugin = "jacoco")
     apply(plugin = "kotlin")
     apply(plugin = "kotlin-spring")
 
@@ -83,6 +88,32 @@ subprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
         jvmArgs("--enable-native-access=ALL-UNNAMED")
+        finalizedBy("jacocoTestReport")
+    }
+
+    extensions.configure<JacocoPluginExtension> {
+        toolVersion = "0.8.14"
+    }
+
+    tasks.named<JacocoReport>("jacocoTestReport") {
+        dependsOn(tasks.test)
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+    }
+
+    tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+        dependsOn(tasks.test)
+        violationRules {
+            rule {
+                limit {
+                    counter = "BRANCH"
+                    value = "COVEREDRATIO"
+                    minimum = "0.80".toBigDecimal()
+                }
+            }
+        }
     }
 
     tasks.withType<JavaExec>().configureEach {

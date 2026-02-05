@@ -1,5 +1,6 @@
 package com.leaky.tokens.authserver;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -192,6 +193,18 @@ class AuthControllerTest {
     }
 
     @Test
+    void listApiKeysRejectsBlankUserId() {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        AuthController controller = new AuthController(authService, apiKeyService, metrics);
+
+        var response = controller.listApiKeys(" ");
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+    }
+
+    @Test
     void listApiKeysRejectsInvalidUserId() throws Exception {
         AuthService authService = Mockito.mock(AuthService.class);
         ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
@@ -236,6 +249,18 @@ class AuthControllerTest {
                 .param("apiKeyId", UUID.randomUUID().toString()))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("userId is required"));
+    }
+
+    @Test
+    void revokeApiKeyRejectsBlankApiKeyId() {
+        AuthService authService = Mockito.mock(AuthService.class);
+        ApiKeyService apiKeyService = Mockito.mock(ApiKeyService.class);
+        AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
+        AuthController controller = new AuthController(authService, apiKeyService, metrics);
+
+        var response = controller.revokeApiKey(UUID.randomUUID().toString(), " ");
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
     }
 
     @Test

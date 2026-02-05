@@ -56,4 +56,19 @@ class ApiKeyValidationCacheTest {
 
         assertThat(cache.get("missing", 60)).isEmpty();
     }
+
+    @Test
+    void ttlZeroDoesNotExpireFreshEntry() {
+        ApiKeyValidationCache cache = new ApiKeyValidationCache();
+        ApiKeyValidationCache.CacheEntry entry = new ApiKeyValidationCache.CacheEntry(
+            "user-1",
+            null,
+            null,
+            Instant.now()
+        );
+
+        cache.put("key-3", entry, 10);
+
+        assertThat(cache.get("key-3", 0)).isPresent();
+    }
 }

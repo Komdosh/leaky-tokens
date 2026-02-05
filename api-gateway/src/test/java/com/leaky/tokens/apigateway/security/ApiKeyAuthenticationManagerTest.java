@@ -9,6 +9,7 @@ import com.leaky.tokens.apigateway.metrics.GatewayMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -28,7 +29,7 @@ class ApiKeyAuthenticationManagerTest {
             Instant.now()
         ), 100);
 
-        WebClient.Builder builder = WebClient.builder().exchangeFunction(request -> Mono.error(new IllegalStateException("should not call")));
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(_ -> Mono.error(new IllegalStateException("should not call")));
         ApiKeyAuthenticationManager manager = new ApiKeyAuthenticationManager(
             builder,
             properties,
@@ -106,12 +107,74 @@ class ApiKeyAuthenticationManagerTest {
         assertThat(auth.getRoles()).isEmpty();
     }
 
+    @Test
+    void ignoresNonApiKeyAuthentication() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setAuthServerUrl("http://localhost");
+        ApiKeyValidationCache cache = new ApiKeyValidationCache();
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(successExchange());
+
+        ApiKeyAuthenticationManager manager = new ApiKeyAuthenticationManager(
+            builder,
+            properties,
+            cache,
+            new GatewayMetrics(new SimpleMeterRegistry())
+        );
+
+        var result = manager.authenticate(new UsernamePasswordAuthenticationToken("user", "pass")).blockOptional();
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void ignoresInvalidExpiresAt() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setAuthServerUrl("http://localhost");
+        properties.setCacheMaxSize(10);
+        ApiKeyValidationCache cache = new ApiKeyValidationCache();
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(invalidExpiresExchange());
+
+        ApiKeyAuthenticationManager manager = new ApiKeyAuthenticationManager(
+            builder,
+            properties,
+            cache,
+            new GatewayMetrics(new SimpleMeterRegistry())
+        );
+
+        ApiKeyAuthenticationToken token = new ApiKeyAuthenticationToken("bad-exp-key");
+        ApiKeyAuthenticationToken auth = (ApiKeyAuthenticationToken) manager.authenticate(token).block();
+
+        assertThat(auth).isNotNull();
+        assertThat(cache.get("bad-exp-key", 60)).isPresent();
+        assertThat(cache.get("bad-exp-key", 60).get().getExpiresAt()).isNull();
+    }
+
+    @Test
+    void filtersBlankRolesFromResponse() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setAuthServerUrl("http://localhost");
+        ApiKeyValidationCache cache = new ApiKeyValidationCache();
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(blankRolesExchange());
+
+        ApiKeyAuthenticationManager manager = new ApiKeyAuthenticationManager(
+            builder,
+            properties,
+            cache,
+            new GatewayMetrics(new SimpleMeterRegistry())
+        );
+
+        ApiKeyAuthenticationToken token = new ApiKeyAuthenticationToken("role-key");
+        ApiKeyAuthenticationToken auth = (ApiKeyAuthenticationToken) manager.authenticate(token).block();
+
+        assertThat(auth.getRoles()).containsExactly("ADMIN");
+    }
+
     private ExchangeFunction rejectingExchange() {
-        return request -> Mono.just(ClientResponse.create(HttpStatus.UNAUTHORIZED).build());
+        return _ -> Mono.just(ClientResponse.create(HttpStatus.UNAUTHORIZED).build());
     }
 
     private ExchangeFunction successExchange() {
-        return request -> Mono.just(
+        return _ -> Mono.just(
             ClientResponse.create(HttpStatus.OK)
                 .header("Content-Type", "application/json")
                 .body("{\"userId\":\"user-123\",\"roles\":[\"ADMIN\"],\"expiresAt\":\"2026-12-31T00:00:00Z\"}")
@@ -120,10 +183,28 @@ class ApiKeyAuthenticationManagerTest {
     }
 
     private ExchangeFunction nonListRolesExchange() {
-        return request -> Mono.just(
+        return _ -> Mono.just(
             ClientResponse.create(HttpStatus.OK)
                 .header("Content-Type", "application/json")
                 .body("{\"userId\":\"user-123\",\"roles\":\"ADMIN\"}")
+                .build()
+        );
+    }
+
+    private ExchangeFunction invalidExpiresExchange() {
+        return _ -> Mono.just(
+            ClientResponse.create(HttpStatus.OK)
+                .header("Content-Type", "application/json")
+                .body("{\"userId\":\"user-123\",\"roles\":[\"USER\"],\"expiresAt\":\"not-a-date\"}")
+                .build()
+        );
+    }
+
+    private ExchangeFunction blankRolesExchange() {
+        return _ -> Mono.just(
+            ClientResponse.create(HttpStatus.OK)
+                .header("Content-Type", "application/json")
+                .body("{\"userId\":\"user-123\",\"roles\":[\"ADMIN\",\" \"]}")
                 .build()
         );
     }
