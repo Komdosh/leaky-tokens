@@ -37,6 +37,7 @@
 - Added rate-limit cleanup, quota reset-disabled, and baseline clamp tests.
 - Added gateway web filter header/correlation tests.
 - Added API key authentication manager tests (cache hit/miss/failure).
+- Added analytics controller null-param coverage and non-list roles handling.
 
 ## Blocking / Known Issues
 - None currently.

@@ -140,4 +140,65 @@ class AnalyticsControllerTest {
         assertThat(response.isAnomaly()).isTrue();
         assertThat(response.getCurrentTokens()).isEqualTo(1200);
     }
+
+    @Test
+    void reportPassesNullDefaultsToService() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            reportService
+        );
+
+        AnalyticsReportResponse report = new AnalyticsReportResponse(
+            "openai",
+            Instant.parse("2026-02-04T16:00:00Z"),
+            Instant.parse("2026-02-04T17:00:00Z"),
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0,
+            0,
+            List.of()
+        );
+        when(reportService.buildReport(eq("openai"), eq(null), eq(null))).thenReturn(report);
+
+        AnalyticsReportResponse response = controller.report("openai", null, null);
+
+        verify(reportService).buildReport(eq("openai"), eq(null), eq(null));
+        assertThat(response.getTotalEvents()).isEqualTo(0);
+    }
+
+    @Test
+    void anomaliesPassesNullDefaultsToService() {
+        TokenUsageByProviderRepository repository = Mockito.mock(TokenUsageByProviderRepository.class);
+        AnalyticsReportService reportService = Mockito.mock(AnalyticsReportService.class);
+        AnalyticsController controller = new AnalyticsController(
+            repository,
+            new AnalyticsMetrics(new SimpleMeterRegistry()),
+            reportService
+        );
+
+        AnalyticsAnomalyResponse anomaly = new AnalyticsAnomalyResponse(
+            "openai",
+            Instant.parse("2026-02-04T16:00:00Z"),
+            Instant.parse("2026-02-04T17:00:00Z"),
+            1,
+            0,
+            0.0,
+            0.0,
+            2.0,
+            false,
+            0
+        );
+        when(reportService.detectAnomaly(eq("openai"), eq(null), eq(null), eq(null), eq(null))).thenReturn(anomaly);
+
+        AnalyticsAnomalyResponse response = controller.anomalies("openai", null, null, null, null);
+
+        verify(reportService).detectAnomaly(eq("openai"), eq(null), eq(null), eq(null), eq(null));
+        assertThat(response.isAnomaly()).isFalse();
+    }
 }

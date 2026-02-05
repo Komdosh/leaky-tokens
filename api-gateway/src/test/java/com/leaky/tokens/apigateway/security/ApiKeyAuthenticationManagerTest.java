@@ -86,6 +86,26 @@ class ApiKeyAuthenticationManagerTest {
         assertThat(cache.get("fresh-key", 60)).isPresent();
     }
 
+    @Test
+    void handlesNonListRolesAsEmpty() {
+        ApiKeyAuthProperties properties = new ApiKeyAuthProperties();
+        properties.setAuthServerUrl("http://localhost");
+        ApiKeyValidationCache cache = new ApiKeyValidationCache();
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(nonListRolesExchange());
+
+        ApiKeyAuthenticationManager manager = new ApiKeyAuthenticationManager(
+            builder,
+            properties,
+            cache,
+            new GatewayMetrics(new SimpleMeterRegistry())
+        );
+
+        ApiKeyAuthenticationToken token = new ApiKeyAuthenticationToken("role-key");
+        ApiKeyAuthenticationToken auth = (ApiKeyAuthenticationToken) manager.authenticate(token).block();
+
+        assertThat(auth.getRoles()).isEmpty();
+    }
+
     private ExchangeFunction rejectingExchange() {
         return request -> Mono.just(ClientResponse.create(HttpStatus.UNAUTHORIZED).build());
     }
@@ -95,6 +115,15 @@ class ApiKeyAuthenticationManagerTest {
             ClientResponse.create(HttpStatus.OK)
                 .header("Content-Type", "application/json")
                 .body("{\"userId\":\"user-123\",\"roles\":[\"ADMIN\"],\"expiresAt\":\"2026-12-31T00:00:00Z\"}")
+                .build()
+        );
+    }
+
+    private ExchangeFunction nonListRolesExchange() {
+        return request -> Mono.just(
+            ClientResponse.create(HttpStatus.OK)
+                .header("Content-Type", "application/json")
+                .body("{\"userId\":\"user-123\",\"roles\":\"ADMIN\"}")
                 .build()
         );
     }
