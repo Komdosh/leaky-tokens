@@ -130,6 +130,7 @@ class GatewayRateLimitTest {
         assertThat(first.getStatus().value()).isEqualTo(200);
         assertThat(second.getStatus().value()).isEqualTo(429);
         assertThat(second.getResponseHeaders().getFirst("Retry-After")).isNotBlank();
+        assertThat(second.getResponseHeaders().getFirst("X-RateLimit-Remaining")).isEqualTo("0");
     }
 
     @Test

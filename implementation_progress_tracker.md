@@ -45,6 +45,7 @@
 - Added gateway security config permit-all coverage.
 - Added gateway security config auth-required coverage.
 - Added gateway auth custom header coverage.
+- Added gateway security header and rate limit header assertions.
 
 ## Blocking / Known Issues
 - None currently.

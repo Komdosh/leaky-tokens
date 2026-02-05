@@ -153,6 +153,7 @@ class GatewayConsumeRouteTest {
         assertThat(result.getResponseHeaders().getContentType()).isEqualTo(APPLICATION_JSON);
         assertThat(result.getResponseHeaders().getFirst("X-Content-Type-Options")).isEqualTo("nosniff");
         assertThat(result.getResponseHeaders().getFirst("X-Frame-Options")).isEqualTo("DENY");
+        assertThat(result.getResponseHeaders().getFirst("Strict-Transport-Security")).contains("max-age=31536000");
         assertThat(result.getResponseBody()).contains("\"allowed\":true");
         assertThat(result.getResponseBody()).contains("\"userId\":\"00000000-0000-0000-0000-000000000001\"");
         assertThat(authCallCount.get()).isGreaterThanOrEqualTo(1);
