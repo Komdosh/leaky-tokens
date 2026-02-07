@@ -52,7 +52,7 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -94,7 +94,7 @@ services:
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9200 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -115,7 +115,7 @@ services:
       elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9600 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9600/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -135,7 +135,7 @@ services:
       elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/5601 && echo -e 'GET /api/status HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

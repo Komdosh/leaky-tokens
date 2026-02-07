@@ -8,9 +8,9 @@
 
     <springProfile name="logstash">
         <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-            <destination>:</destination>
+            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"service":""}</customFields>
+                <customFields>{"service":"${APP_NAME}"}</customFields>
             </encoder>
             <keepAliveDuration>30 seconds</keepAliveDuration>
         </appender>
@@ -21,11 +21,16 @@
             <appender-ref ref="LOGSTASH"/>
         </appender>
     </springProfile>
-
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <springProfile name="logstash">
+    <springProfile name="logstash">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_LOGSTASH"/>
-        </springProfile>
-    </root>
+        </root>
+    </springProfile>
+
+    <springProfile name="!logstash">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
 </configuration>
