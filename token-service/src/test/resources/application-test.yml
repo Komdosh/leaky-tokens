@@ -2,6 +2,10 @@ spring:
   cloud:
     config:
       enabled: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    admin:
+      fail-fast: false
   jpa:
     hibernate:
       ddl-auto: none
