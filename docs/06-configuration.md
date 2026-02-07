@@ -654,7 +654,7 @@ spring:
     bootstrap-servers: kafka:9092
   
   cassandra:
-    contact-points: cassandra
+    contact-points: cassandra-db
 ```
 
 ---

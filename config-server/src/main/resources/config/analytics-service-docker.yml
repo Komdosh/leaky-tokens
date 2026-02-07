@@ -14,25 +14,7 @@ spring:
       keyspace-name: analytics_keyspace
       schema-action: CREATE_IF_NOT_EXISTS
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://auth-server:8081/oauth2/jwks
-
 analytics:
-  report:
-    default-window-minutes: 60
-    max-window-minutes: 1440
-    max-limit: 5000
-    max-baseline-windows: 24
-    max-top-users: 5
-    default-baseline-windows: 4
-    default-anomaly-threshold-multiplier: 2.0
-
-springdoc:
-  swagger-ui:
-    tags-sorter: alpha
-    operations-sorter: alpha
-  paths-to-exclude:
-    - /actuator/**
+  token-usage:
+    topic: token-usage
+    group: analytics-service

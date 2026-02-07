@@ -1,4 +1,4 @@
-package com.leaky.tokens.analyticsservice.web;
+package com.leaky.tokens.stubs.gemini.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,15 +15,15 @@ class CorrelationIdFilterTest {
     void usesIncomingHeader() throws Exception {
         CorrelationIdFilter filter = new CorrelationIdFilter();
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader(CorrelationIdFilter.HEADER_NAME, "corr-analytics");
+        request.addHeader(CorrelationIdFilter.HEADER_NAME, "corr-gemini");
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicReference<String> mdcValue = new AtomicReference<>();
         FilterChain chain = (_, _) -> mdcValue.set(MDC.get("correlationId"));
 
         filter.doFilter(request, response, chain);
 
-        assertThat(mdcValue.get()).isEqualTo("corr-analytics");
-        assertThat(response.getHeader(CorrelationIdFilter.HEADER_NAME)).isEqualTo("corr-analytics");
+        assertThat(mdcValue.get()).isEqualTo("corr-gemini");
+        assertThat(response.getHeader(CorrelationIdFilter.HEADER_NAME)).isEqualTo("corr-gemini");
         assertThat(MDC.get("correlationId")).isNull();
     }
 

@@ -1,44 +1,21 @@
 spring:
+  data:
+    redis:
+      host: redis
+      port: 6379
+
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://auth-server:8081/oauth2/jwks
+          issuer-uri: http://auth-server:8081
 
 gateway:
-  rate-limit:
-    enabled: true
-    capacity: 120
-    window-seconds: 60
-    key-strategy: AUTO
-    header-name: X-Api-Key
-    user-header-name: X-User-Id
-    counter-ttl: 6h
-    cleanup-interval: 30m
-    whitelist-paths:
-      - /actuator/**
-    routes:
-      token-service:
-        capacity: 200
-        window-seconds: 60
   api-key:
     enabled: true
-    header-name: X-Api-Key
     auth-server-url: http://auth-server:8081
-    user-header-name: X-User-Id
-    roles-header-name: X-User-Roles
-    cache-ttl-seconds: 120
-    cache-max-size: 10000
 
-springdoc:
-  swagger-ui:
-    tags-sorter: alpha
-    operations-sorter: alpha
-  paths-to-exclude:
-    - /actuator/**
-
-feature:
-  flags:
-    gateway:
-      rate-limiting: true
-      api-key-validation: true
+logging:
+  level:
+    com.netflix.discovery: ERROR
+    org.springframework.cloud.netflix.eureka: ERROR

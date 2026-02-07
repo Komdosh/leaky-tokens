@@ -391,7 +391,7 @@ server:
   
 spring:
   cassandra:
-    contact-points: cassandra:9042
+    contact-points: cassandra-db:9042
     keyspace-name: analytics_keyspace
     schema-action: CREATE_IF_NOT_EXISTS
     

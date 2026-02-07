@@ -1,15 +1,13 @@
 package com.leaky.tokens.authserver.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class AuthMetrics {
     private final MeterRegistry registry;
-
-    public AuthMetrics(MeterRegistry registry) {
-        this.registry = registry;
-    }
 
     public void registerSuccess() {
         registry.counter("auth.register.total", "outcome", "success").increment();

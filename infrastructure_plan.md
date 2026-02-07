@@ -146,7 +146,7 @@ services:
      restart: unless-stopped
 
   # Apache Cassandra
-  cassandra:
+  cassandra-db:
     image: cassandra:5.0.1
     container_name: cassandra-db
     ports:
@@ -240,7 +240,7 @@ services:
     depends_on:
       eureka-server:
         condition: service_healthy
-      cassandra:
+      cassandra-db:
         condition: service_healthy
       kafka:
         condition: service_started

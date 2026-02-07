@@ -5,21 +5,18 @@ import java.util.UUID;
 
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxEntry;
 import com.leaky.tokens.tokenservice.outbox.TokenOutboxRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
+@RequiredArgsConstructor
 @ConditionalOnBean(TokenOutboxRepository.class)
 public class OutboxTokenUsagePublisher implements TokenUsagePublisher {
     private final TokenOutboxRepository repository;
     private final ObjectMapper objectMapper;
-
-    public OutboxTokenUsagePublisher(TokenOutboxRepository repository, ObjectMapper objectMapper) {
-        this.repository = repository;
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     public void publish(TokenUsageEvent event) {
