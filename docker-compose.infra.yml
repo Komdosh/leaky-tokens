@@ -78,7 +78,7 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  cassandra:
+  cassandra-db:
     image: cassandra:5.0.1
     container_name: cassandra-db
     labels:
