@@ -1,11 +1,79 @@
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: elasticsearch
+    labels:
+      - "com.leaky.tokens.logs=true"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9200 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.3
+    container_name: logstash
+    labels:
+      - "com.leaky.tokens.logs=true"
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9600 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    container_name: kibana
+    labels:
+      - "com.leaky.tokens.logs=true"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/5601 && echo -e 'GET /api/status HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
   service-discovery:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":service-discovery:bootRun"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=logstash
     ports:
       - "8761:8761"
     healthcheck:
@@ -18,11 +86,14 @@ services:
   config-server:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":config-server:bootRun"]
     environment:
+      - SPRING_PROFILES_ACTIVE=logstash
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
       service-discovery:
@@ -39,11 +110,14 @@ services:
   api-gateway:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":api-gateway:bootRun"]
     environment:
+      - SPRING_PROFILES_ACTIVE=logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -63,12 +137,14 @@ services:
   auth-server:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":auth-server:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_PROFILES_ACTIVE=local,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -88,12 +164,14 @@ services:
   token-service:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":token-service:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_PROFILES_ACTIVE=local,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -113,12 +191,14 @@ services:
   analytics-service:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":analytics-service:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_PROFILES_ACTIVE=local,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -137,3 +217,4 @@ services:
 
 volumes:
   gradle-cache:
+  elasticsearch_data:

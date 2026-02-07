@@ -47,6 +47,7 @@ subprojects {
     dependencies {
         implementation(platform("org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"))
         implementation("org.springframework.boot:spring-boot-starter")
+        implementation("net.logstash.logback:logstash-logback-encoder:7.4")
         implementation("org.jetbrains.kotlin:kotlin-reflect")
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 

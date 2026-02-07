@@ -8,15 +8,15 @@ The Leaky Tokens project follows a microservices architecture pattern with the f
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Client Apps   │    │   External      │    │   Monitoring    │
 │                 │    │   Services      │    │   Systems       │
-│  (Web/Mobile)   │    │ (Qwen/Gemini/   │    │ (Prometheus/   │
-│                 │    │   OpenAI Stubs)  │    │   Grafana)      │
+│  (Web/Mobile)   │    │ (Qwen/Gemini/   │    │ (Prometheus/    │
+│                 │    │   OpenAI Stubs) │    │   Grafana)      │
 └─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
           │                      │                      │
           ▼                      ▼                      ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    API Gateway                                │
-│  (Spring Cloud Gateway)                                       │
-└─────────────────┬─────────────────────────────────────────────┘
+│                      API Gateway                                │
+│    (Spring Cloud Gateway)                                       │
+└─────────────────┬───────────────────────────────────────────────┘
                   │
         ┌─────────▼─────────┐
         │ Service Discovery │
@@ -29,22 +29,22 @@ The Leaky Tokens project follows a microservices architecture pattern with the f
 │ Auth  │    │ Config  │   │ Kafka │
 │Server │    │ Server  │   │       │
 └───────┘    └─────────┘   └───┬───┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-    ┌───▼───┐             ┌───▼───┐             ┌───▼───┐
-    │Token  │             │Analytics│           │Other  │
-    │Service│             │Service  │           │Services│
-    └───┬───┘             └───┬───┘             └───┬───┘
-        │                     │                     │
-    ┌───▼─────────────────────▼─────────────────────▼───┐
-    │                                                   │
-    │                Data Layer                         │
-    │  ┌─────────┐  ┌─────────┐  ┌──────────────────┐   │
-    │  │PostgreSQL│ │  Redis  │ │ Apache Cassandra │   │
-    │  │         │  │         │ │                  │   │
-    │  └─────────┘  └─────────┘ └──────────────────┘   │
-    └───────────────────────────────────────────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+     ┌───▼───┐             ┌───▼─────┐             ┌───▼────┐
+     │Token  │             │Analytics│             │Other   │
+     │Service│             │Service  │             │Services│
+     └───┬───┘             └───┬─────┘             └───┬────┘
+         │                     │                       │
+     ┌───▼─────────────────────▼───────────────────────▼───┐
+     │                                                     │
+     │                Data Layer                           │
+     │  ┌──────────┐  ┌─────────┐ ┌──────────────────┐     │
+     │  │PostgreSQL│  │  Redis  │ │ Apache Cassandra │     │
+     │  │          │  │         │ │                  │     │
+     │  └──────────┘  └─────────┘ └──────────────────┘     │
+     └─────────────────────────────────────────────────────┘
 ```
 
 ## Component Descriptions

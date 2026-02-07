@@ -1,0 +1,31 @@
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProperty name="LOGSTASH_HOST" source="LOGSTASH_HOST" defaultValue="logstash"/>
+    <springProperty name="LOGSTASH_PORT" source="LOGSTASH_PORT" defaultValue="5044"/>
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="api-gateway"/>
+
+    <springProfile name="logstash">
+        <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <customFields>{"service":"${APP_NAME}"}</customFields>
+            </encoder>
+            <keepAliveDuration>30 seconds</keepAliveDuration>
+        </appender>
+
+        <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>2048</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <appender-ref ref="LOGSTASH"/>
+        </appender>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <springProfile name="logstash">
+            <appender-ref ref="ASYNC_LOGSTASH"/>
+        </springProfile>
+    </root>
+</configuration>

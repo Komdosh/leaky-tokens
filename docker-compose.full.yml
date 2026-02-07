@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: postgres-db
+    labels:
+      - "com.leaky.tokens.logs=true"
     ports:
       - "5432:5432"
     environment:
@@ -20,6 +22,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis-cache
+    labels:
+      - "com.leaky.tokens.logs=true"
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
@@ -35,6 +39,8 @@ services:
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka-broker
+    labels:
+      - "com.leaky.tokens.logs=true"
     ports:
       - "9092:9092"
     environment:
@@ -56,6 +62,8 @@ services:
   cassandra-db:
     image: cassandra:5.0.1
     container_name: cassandra-db
+    labels:
+      - "com.leaky.tokens.logs=true"
     ports:
       - "9042:9042"
     environment:
@@ -70,9 +78,75 @@ services:
       retries: 5
     restart: unless-stopped
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: elasticsearch
+    labels:
+      - "com.leaky.tokens.logs=true"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9200 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.3
+    container_name: logstash
+    labels:
+      - "com.leaky.tokens.logs=true"
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9600 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    container_name: kibana
+    labels:
+      - "com.leaky.tokens.logs=true"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/5601 && echo -e 'GET /api/status HTTP/1.0\\r\\n\\r\\n' >&3 && timeout 2 cat <&3 | grep -q '200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
   jaeger:
     image: jaegertracing/all-in-one:1.58
     container_name: jaeger
+    labels:
+      - "com.leaky.tokens.logs=true"
     ports:
       - "16686:16686"  # Jaeger UI
       - "4318:4318"    # OTLP HTTP
@@ -89,12 +163,15 @@ services:
   service-discovery:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/service-discovery", "--project-cache-dir", "/root/.gradle/project-cache/service-discovery", ":service-discovery:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/service-discovery
+      - SPRING_PROFILES_ACTIVE=logstash
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     ports:
@@ -113,13 +190,15 @@ services:
   config-server:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/config-server", "--project-cache-dir", "/root/.gradle/project-cache/config-server", ":config-server:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/config-server
-      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_PROFILES_ACTIVE=native,logstash
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
@@ -141,13 +220,15 @@ services:
   api-gateway:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/api-gateway", "--project-cache-dir", "/root/.gradle/project-cache/api-gateway", ":api-gateway:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/api-gateway
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
@@ -172,13 +253,15 @@ services:
   auth-server:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/auth-server", "--project-cache-dir", "/root/.gradle/project-cache/auth-server", ":auth-server:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/auth-server
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
@@ -212,13 +295,15 @@ services:
   token-service:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/token-service", "--project-cache-dir", "/root/.gradle/project-cache/token-service", ":token-service:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/token-service
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/token_db
@@ -255,6 +340,8 @@ services:
   analytics-service:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
@@ -267,7 +354,7 @@ services:
     restart: on-failure
     environment:
       - GRADLE_USER_HOME=/root/.gradle/analytics-service
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - SPRING_CASSANDRA_CONTACT_POINTS=cassandra-db
@@ -305,13 +392,15 @@ services:
   qwen-stub:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/qwen-stub", "--project-cache-dir", "/root/.gradle/project-cache/qwen-stub", ":qwen-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/qwen-stub
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
@@ -336,13 +425,15 @@ services:
   gemini-stub:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/gemini-stub", "--project-cache-dir", "/root/.gradle/project-cache/gemini-stub", ":gemini-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/gemini-stub
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
@@ -367,13 +458,15 @@ services:
   openai-stub:
     image: eclipse-temurin:25-jdk
     working_dir: /workspace
+    labels:
+      - "com.leaky.tokens.logs=true"
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/openai-stub", "--project-cache-dir", "/root/.gradle/project-cache/openai-stub", ":openai-stub:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/openai-stub
-      - SPRING_PROFILES_ACTIVE=docker,tracing
+      - SPRING_PROFILES_ACTIVE=docker,tracing,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
@@ -400,3 +493,4 @@ volumes:
   redis_data:
   cassandra_data:
   gradle-cache:
+  elasticsearch_data:
