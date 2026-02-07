@@ -1,0 +1,330 @@
+{
+  "info": {
+    "name": "Leaky Tokens API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiGatewayUrl", "value": "http://localhost:8080" },
+    { "key": "authUrl", "value": "http://localhost:8081" },
+    { "key": "tokenUrl", "value": "http://localhost:8082" },
+    { "key": "analyticsUrl", "value": "http://localhost:8083" },
+    { "key": "qwenStubUrl", "value": "http://localhost:8091" },
+    { "key": "geminiStubUrl", "value": "http://localhost:8092" },
+    { "key": "openaiStubUrl", "value": "http://localhost:8093" },
+    { "key": "accessToken", "value": "" },
+    { "key": "apiKey", "value": "" },
+    { "key": "userId", "value": "00000000-0000-0000-0000-000000000001" },
+    { "key": "orgId", "value": "10000000-0000-0000-0000-000000000001" },
+    { "key": "provider", "value": "openai" },
+    { "key": "sagaId", "value": "" },
+    { "key": "apiKeyId", "value": "" },
+    { "key": "idempotencyKey", "value": "demo-idempotency-key" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authUrl}}/api/v1/auth/register", "host": ["{{authUrl}}"], "path": ["api", "v1", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo-user\",\n  \"email\": \"demo-user@example.com\",\n  \"password\": \"password\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{authUrl}}/api/v1/auth/login", "host": ["{{authUrl}}"], "path": ["api", "v1", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo-user\",\n  \"password\": \"password\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.token) { pm.environment.set(\"accessToken\", data.token); }",
+                  "if (data && data.userId) { pm.environment.set(\"userId\", data.userId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{authUrl}}/api/v1/auth/api-keys", "host": ["{{authUrl}}"], "path": ["api", "v1", "auth", "api-keys"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"name\": \"cli-key\",\n  \"expiresAt\": \"2026-12-31T00:00:00Z\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.apiKey) { pm.environment.set(\"apiKey\", data.apiKey); }",
+                  "if (data && data.id) { pm.environment.set(\"apiKeyId\", data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{authUrl}}/api/v1/auth/api-keys?userId={{userId}}",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "v1", "auth", "api-keys"],
+              "query": [{ "key": "userId", "value": "{{userId}}" }]
+            }
+          }
+        },
+        {
+          "name": "Revoke API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{authUrl}}/api/v1/auth/api-keys?userId={{userId}}&apiKeyId={{apiKeyId}}",
+              "host": ["{{authUrl}}"],
+              "path": ["api", "v1", "auth", "api-keys"],
+              "query": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "apiKeyId", "value": "{{apiKeyId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validate API Key",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{apiKey}}" }],
+            "url": { "raw": "{{authUrl}}/api/v1/auth/api-keys/validate", "host": ["{{authUrl}}"], "path": ["api", "v1", "auth", "api-keys", "validate"] }
+          }
+        },
+        {
+          "name": "JWKS",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{authUrl}}/oauth2/jwks", "host": ["{{authUrl}}"], "path": ["oauth2", "jwks"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Token Service",
+      "item": [
+        {
+          "name": "Status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{tokenUrl}}/api/v1/tokens/status", "host": ["{{tokenUrl}}"], "path": ["api", "v1", "tokens", "status"] }
+          }
+        },
+        {
+          "name": "Quota (User)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{tokenUrl}}/api/v1/tokens/quota?userId={{userId}}&provider={{provider}}",
+              "host": ["{{tokenUrl}}"],
+              "path": ["api", "v1", "tokens", "quota"],
+              "query": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "provider", "value": "{{provider}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Quota (Org)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{tokenUrl}}/api/v1/tokens/quota/org?orgId={{orgId}}&provider={{provider}}",
+              "host": ["{{tokenUrl}}"],
+              "path": ["api", "v1", "tokens", "quota", "org"],
+              "query": [
+                { "key": "orgId", "value": "{{orgId}}" },
+                { "key": "provider", "value": "{{provider}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Consume",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{tokenUrl}}/api/v1/tokens/consume", "host": ["{{tokenUrl}}"], "path": ["api", "v1", "tokens", "consume"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"orgId\": \"{{orgId}}\",\n  \"provider\": \"{{provider}}\",\n  \"tokens\": 25,\n  \"prompt\": \"Hello, world\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Purchase (Saga)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": { "raw": "{{tokenUrl}}/api/v1/tokens/purchase", "host": ["{{tokenUrl}}"], "path": ["api", "v1", "tokens", "purchase"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"orgId\": \"{{orgId}}\",\n  \"provider\": \"{{provider}}\",\n  \"tokens\": 500\n}"
+            }
+          }
+        },
+        {
+          "name": "Purchase Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{tokenUrl}}/api/v1/tokens/purchase/{{sagaId}}", "host": ["{{tokenUrl}}"], "path": ["api", "v1", "tokens", "purchase", "{{sagaId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{analyticsUrl}}/api/v1/analytics/health", "host": ["{{analyticsUrl}}"], "path": ["api", "v1", "analytics", "health"] }
+          }
+        },
+        {
+          "name": "Usage",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{analyticsUrl}}/api/v1/analytics/usage?provider={{provider}}&limit=20",
+              "host": ["{{analyticsUrl}}"],
+              "path": ["api", "v1", "analytics", "usage"],
+              "query": [
+                { "key": "provider", "value": "{{provider}}" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Report",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{analyticsUrl}}/api/v1/analytics/report?provider={{provider}}&windowMinutes=60&limit=50",
+              "host": ["{{analyticsUrl}}"],
+              "path": ["api", "v1", "analytics", "report"],
+              "query": [
+                { "key": "provider", "value": "{{provider}}" },
+                { "key": "windowMinutes", "value": "60" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Anomalies",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{analyticsUrl}}/api/v1/analytics/anomalies?provider={{provider}}&windowMinutes=60&baselineWindows=6&thresholdMultiplier=2.0&limit=50",
+              "host": ["{{analyticsUrl}}"],
+              "path": ["api", "v1", "analytics", "anomalies"],
+              "query": [
+                { "key": "provider", "value": "{{provider}}" },
+                { "key": "windowMinutes", "value": "60" },
+                { "key": "baselineWindows", "value": "6" },
+                { "key": "thresholdMultiplier", "value": "2.0" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gateway",
+      "item": [
+        {
+          "name": "Circuit Breaker Fallback",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiGatewayUrl}}/fallback/token-service", "host": ["{{apiGatewayUrl}}"], "path": ["fallback", "token-service"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Provider Stubs",
+      "item": [
+        {
+          "name": "Qwen Chat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{qwenStubUrl}}/api/v1/qwen/chat", "host": ["{{qwenStubUrl}}"], "path": ["api", "v1", "qwen", "chat"] },
+            "body": { "mode": "raw", "raw": "{\n  \"prompt\": \"Hello Qwen\"\n}" }
+          }
+        },
+        {
+          "name": "Gemini Chat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{geminiStubUrl}}/api/v1/gemini/chat", "host": ["{{geminiStubUrl}}"], "path": ["api", "v1", "gemini", "chat"] },
+            "body": { "mode": "raw", "raw": "{\n  \"prompt\": \"Hello Gemini\"\n}" }
+          }
+        },
+        {
+          "name": "OpenAI Chat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{openaiStubUrl}}/api/v1/openai/chat", "host": ["{{openaiStubUrl}}"], "path": ["api", "v1", "openai", "chat"] },
+            "body": { "mode": "raw", "raw": "{\n  \"prompt\": \"Hello OpenAI\"\n}" }
+          }
+        }
+      ]
+    }
+  ]
+}

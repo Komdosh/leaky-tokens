@@ -156,6 +156,15 @@ curl -X POST http://localhost:8082/api/v1/tokens/consume \
 
 ---
 
+## 🧪 Postman
+
+1. Import the collection `docs/postman/leaky-tokens.postman_collection.json`.
+2. Import the environment `docs/postman/leaky-tokens.postman_environment.json`.
+3. Select the `Leaky Tokens Local` environment.
+4. Run `Auth/Login` to auto-populate `accessToken` and `userId`, then exercise the other requests.
+
+---
+
 ## 📖 Documentation
 
 <div align="center">
