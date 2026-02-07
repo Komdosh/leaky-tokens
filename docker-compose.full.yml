@@ -43,11 +43,14 @@ services:
       - "com.leaky.tokens.logs=true"
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_NODE_ID: 1
-      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
@@ -68,7 +71,7 @@ services:
       - "9042:9042"
     environment:
       - MAX_HEAP_SIZE=512M
-      - HEAP_NEWSIZE=100M
+      - HEAP_NEWSIZE=64M
     volumes:
       - cassandra_data:/var/lib/cassandra
     healthcheck:
@@ -108,6 +111,8 @@ services:
       - "com.leaky.tokens.logs=true"
     ports:
       - "5044:5044"
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx512m
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/pipeline:/usr/share/logstash/pipeline
@@ -171,7 +176,7 @@ services:
     command: ["./gradlew", "--gradle-user-home", "/root/.gradle/service-discovery", "--project-cache-dir", "/root/.gradle/project-cache/service-discovery", ":service-discovery:bootRun"]
     environment:
       - GRADLE_USER_HOME=/root/.gradle/service-discovery
-      - SPRING_PROFILES_ACTIVE=logstash
+      - SPRING_PROFILES_ACTIVE=docker,logstash
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     ports:

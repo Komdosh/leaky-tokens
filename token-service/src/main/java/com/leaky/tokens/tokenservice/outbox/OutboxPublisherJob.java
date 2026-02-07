@@ -34,7 +34,6 @@ public class OutboxPublisherJob {
     @Scheduled(fixedDelayString = "${token.outbox.poll-interval-ms:2000}")
     @Transactional
     public void publishBatch() {
-        logger.info("Checking for unpublished outbox entries");
         List<TokenOutboxEntry> entries = repository.findUnpublished(PageRequest.of(0, batchSize));
         if (entries.isEmpty()) {
             return;

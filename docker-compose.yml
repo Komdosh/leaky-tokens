@@ -29,6 +29,8 @@ services:
       - "com.leaky.tokens.logs=true"
     ports:
       - "5044:5044"
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx512m
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/pipeline:/usr/share/logstash/pipeline
