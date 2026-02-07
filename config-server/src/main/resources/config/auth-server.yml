@@ -6,6 +6,9 @@ auth:
   jwt:
     issuer: leaky-tokens-auth
     expiry-seconds: 3600
+  api-key:
+    cache-ttl-seconds: 300
+    blacklist-ttl-seconds: 3600
 
 springdoc:
   swagger-ui:

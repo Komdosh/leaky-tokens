@@ -28,6 +28,10 @@ import com.leaky.tokens.authserver.service.ApiKeyService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import tools.jackson.databind.ObjectMapper;
 
 class ApiKeyServiceTest {
     @Test
@@ -35,7 +39,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         UserAccount user = new UserAccount(userId, "alice", "alice@example.com", "hashed");
@@ -60,7 +64,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         ApiKeyCreateRequest request = new ApiKeyCreateRequest();
         request.setUserId(" ");
@@ -77,7 +81,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         ApiKeyCreateRequest request = new ApiKeyCreateRequest();
         request.setUserId("not-a-uuid");
@@ -94,7 +98,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         when(userAccountRepository.findById(eq(userId))).thenReturn(Optional.empty());
@@ -114,7 +118,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         String rawKey = "leaky_" + userId + "_raw";
@@ -138,7 +142,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         String rawKey = "leaky_" + userId + "_raw";
@@ -158,7 +162,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         String rawKey = "leaky_" + userId + "_raw";
@@ -184,7 +188,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         when(apiKeyRepository.findByKeyValue(any())).thenReturn(Optional.empty());
 
@@ -200,7 +204,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         assertThatThrownBy(() -> service.validate(" "))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -212,7 +216,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         ApiKey apiKey = new ApiKey(UUID.randomUUID(), userId, "hashed", "cli", Instant.now(), null);
@@ -229,7 +233,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         UUID keyId = UUID.randomUUID();
@@ -246,7 +250,7 @@ class ApiKeyServiceTest {
         ApiKeyRepository apiKeyRepository = Mockito.mock(ApiKeyRepository.class);
         UserAccountRepository userAccountRepository = Mockito.mock(UserAccountRepository.class);
         AuthMetrics metrics = Mockito.mock(AuthMetrics.class);
-        ApiKeyService service = new ApiKeyService(apiKeyRepository, userAccountRepository, metrics);
+        ApiKeyService service = newService(apiKeyRepository, userAccountRepository, metrics);
 
         UUID userId = UUID.randomUUID();
         UUID keyId = UUID.randomUUID();
@@ -261,5 +265,22 @@ class ApiKeyServiceTest {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hashed = digest.digest(rawKey.getBytes(StandardCharsets.UTF_8));
         return HexFormat.of().formatHex(hashed);
+    }
+
+    private ApiKeyService newService(ApiKeyRepository apiKeyRepository,
+                                     UserAccountRepository userAccountRepository,
+                                     AuthMetrics metrics) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        ObjectProvider<StringRedisTemplate> redisProvider = beanFactory.getBeanProvider(StringRedisTemplate.class);
+        return new ApiKeyService(
+            apiKeyRepository,
+            userAccountRepository,
+            metrics,
+            objectMapper,
+            redisProvider,
+            300,
+            3600
+        );
     }
 }
