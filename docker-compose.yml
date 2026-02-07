@@ -73,7 +73,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":service-discovery:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=logstash
+      - SPRING_PROFILES_ACTIVE=native,logstash
     ports:
       - "8761:8761"
     healthcheck:
@@ -117,7 +117,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":api-gateway:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=logstash
+      - SPRING_PROFILES_ACTIVE=docker,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -144,7 +144,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":auth-server:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=local,logstash
+      - SPRING_PROFILES_ACTIVE=docker,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -171,7 +171,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":token-service:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=local,logstash
+      - SPRING_PROFILES_ACTIVE=docker,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
@@ -198,7 +198,7 @@ services:
       - gradle-cache:/root/.gradle
     command: ["./gradlew", ":analytics-service:bootRun"]
     environment:
-      - SPRING_PROFILES_ACTIVE=local,logstash
+      - SPRING_PROFILES_ACTIVE=docker,logstash
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka
     depends_on:
