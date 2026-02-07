@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit
 
 plugins {
     id("io.gatling.gradle") version "3.11.5"
-    scala
 }
 
 repositories {
@@ -34,10 +33,6 @@ java {
 dependencies {
     gatlingImplementation("io.gatling:gatling-core")
     gatlingImplementation("io.gatling:gatling-http")
-}
-
-tasks.withType<org.gradle.api.tasks.scala.ScalaCompile>().configureEach {
-    scalaCompileOptions.additionalParameters = listOf("-target:jvm-17")
 }
 
 gatling {
