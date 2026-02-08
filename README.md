@@ -20,7 +20,7 @@
   <img src="https://img.shields.io/badge/Observability-Full-blueviolet?style=flat-square" />
 </p>
 
-[📖 Documentation](#documentation) • [🚀 Quick Start](#quick-start) • [📊 Architecture](#architecture) • [🔧 API](#api-reference)
+[📖 Documentation](https://github.com/Komdosh/leaky-tokens/blob/main/docs/README.md) • [🚀 Quick Start](https://github.com/Komdosh/leaky-tokens/blob/main/docs/02-getting-started.md) • [📊 Architecture](https://github.com/Komdosh/leaky-tokens/blob/main/docs/04-architecture.md) • [🔧 API](https://github.com/Komdosh/leaky-tokens/blob/main/docs/08-api-reference.md)
 
 </div>
 
@@ -187,34 +187,6 @@ curl -X POST http://localhost:8082/api/v1/tokens/consume \
 | [💻 Development](docs/10-development.md) | Contributing guide |
 
 </div>
-
----
-
-## 🛠️ Technology Stack
-
-### Backend
-<p align="left">
-  <img src="https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk" />
-  <img src="https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen?style=flat-square&logo=spring" />
-  <img src="https://img.shields.io/badge/Spring%20Cloud-2025.1.1-blue?style=flat-square&logo=spring" />
-  <img src="https://img.shields.io/badge/Lombok-1.18.40-red?style=flat-square" />
-  <img src="https://img.shields.io/badge/MapStruct-1.6.2-yellow?style=flat-square" />
-</p>
-
-### Infrastructure
-<p align="left">
-  <img src="https://img.shields.io/badge/PostgreSQL-16-blue?style=flat-square&logo=postgresql" />
-  <img src="https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis" />
-  <img src="https://img.shields.io/badge/Kafka-7.5-black?style=flat-square&logo=apache-kafka" />
-  <img src="https://img.shields.io/badge/Cassandra-4.1-blue?style=flat-square&logo=apache-cassandra" />
-</p>
-
-### Observability
-<p align="left">
-  <img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus" />
-  <img src="https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana" />
-  <img src="https://img.shields.io/badge/Jaeger-66CFE3?style=flat-square" />
-</p>
 
 ---
 
