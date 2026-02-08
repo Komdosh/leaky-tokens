@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,18 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @Tag(name = "Analytics")
+@RequiredArgsConstructor
 public class AnalyticsController {
     private final TokenUsageByProviderRepository byProviderRepository;
     private final AnalyticsMetrics metrics;
     private final AnalyticsReportService reportService;
-
-    public AnalyticsController(TokenUsageByProviderRepository byProviderRepository,
-                               AnalyticsMetrics metrics,
-                               AnalyticsReportService reportService) {
-        this.byProviderRepository = byProviderRepository;
-        this.metrics = metrics;
-        this.reportService = reportService;
-    }
 
     @GetMapping("/api/v1/analytics/health")
     @Operation(

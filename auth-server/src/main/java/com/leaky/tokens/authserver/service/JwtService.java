@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.leaky.tokens.authserver.config.JwtConfig;
+import com.leaky.tokens.authserver.domain.Role;
 import com.leaky.tokens.authserver.domain.UserAccount;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,17 +29,9 @@ public class JwtService {
     public String issueToken(UserAccount user) {
         Instant expiresAt = Instant.now().plus(expiry);
         List<String> roles = user.getRoles().stream()
-            .map(role -> role.getName())
+            .map(Role::getName)
             .sorted()
             .toList();
         return jwtConfig.signToken(user.getId().toString(), issuer, expiresAt, roles);
-    }
-
-    public String getIssuer() {
-        return issuer;
-    }
-
-    public Duration getExpiry() {
-        return expiry;
     }
 }

@@ -22,29 +22,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Tag(name = "Auth")
+@RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
     private final ApiKeyService apiKeyService;
     private final AuthMetrics metrics;
-
-    public AuthController(AuthService authService, ApiKeyService apiKeyService, AuthMetrics metrics) {
-        this.authService = authService;
-        this.apiKeyService = apiKeyService;
-        this.metrics = metrics;
-    }
 
     @PostMapping("/api/v1/auth/register")
     @Operation(

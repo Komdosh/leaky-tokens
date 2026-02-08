@@ -134,8 +134,8 @@ class TokenControllerTest {
         when(tierResolver.resolveTier()).thenReturn(new TokenTierProperties.TierConfig());
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            UUID.fromString("00000000-0000-0000-0000-000000000001"),
             "openai",
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
             1000,
             900,
             Instant.now(),

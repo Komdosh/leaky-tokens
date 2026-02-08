@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,14 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @Tag(name = "Token Purchase")
+@RequiredArgsConstructor
 public class TokenPurchaseSagaController {
     private final TokenPurchaseSagaService sagaService;
     private final TokenTierResolver tierResolver;
-
-    public TokenPurchaseSagaController(TokenPurchaseSagaService sagaService, TokenTierResolver tierResolver) {
-        this.sagaService = sagaService;
-        this.tierResolver = tierResolver;
-    }
 
     @PostMapping("/api/v1/tokens/purchase")
     @PreAuthorize("hasRole('USER')")

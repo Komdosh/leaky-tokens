@@ -13,10 +13,14 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.domain.Persistable;
 
+@Setter
 @Getter
 @Entity
+@NoArgsConstructor
 @Table(name = "token_purchase_saga")
 public class TokenPurchaseSaga implements Persistable<UUID> {
     @Id
@@ -48,9 +52,6 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public TokenPurchaseSaga() {
-    }
-
     public TokenPurchaseSaga(UUID id, UUID userId, UUID orgId, String provider, long tokens, TokenPurchaseSagaStatus status) {
         this.id = id;
         this.userId = userId;
@@ -80,29 +81,4 @@ public class TokenPurchaseSaga implements Persistable<UUID> {
     public boolean isNew() {
         return createdAt == null;
     }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public void setOrgId(UUID orgId) {
-        this.orgId = orgId;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public void setTokens(long tokens) {
-        this.tokens = tokens;
-    }
-
-    public void setIdempotencyKey(String idempotencyKey) {
-        this.idempotencyKey = idempotencyKey;
-    }
-
-    public void setStatus(TokenPurchaseSagaStatus status) {
-        this.status = status;
-    }
-
 }

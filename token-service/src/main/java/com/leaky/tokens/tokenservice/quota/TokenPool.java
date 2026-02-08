@@ -8,11 +8,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
 @Table(name = "token_pools")
+@NoArgsConstructor
+@AllArgsConstructor
 public class TokenPool {
     @Id
     private UUID id;
@@ -37,27 +41,6 @@ public class TokenPool {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    protected TokenPool() {
-    }
-
-    public TokenPool(UUID id,
-                     UUID userId,
-                     String provider,
-                     long totalTokens,
-                     long remainingTokens,
-                     Instant resetTime,
-                     Instant createdAt,
-                     Instant updatedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.provider = provider;
-        this.totalTokens = totalTokens;
-        this.remainingTokens = remainingTokens;
-        this.resetTime = resetTime;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 
     public void addTokens(long tokens, Instant now) {
         totalTokens += tokens;

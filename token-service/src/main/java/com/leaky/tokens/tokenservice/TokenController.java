@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,24 +39,13 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @Tag(name = "Tokens")
+@RequiredArgsConstructor
 public class TokenController {
     private final TokenBucketService tokenBucketService;
     private final ProviderCallService providerCallService;
     private final TokenQuotaService quotaService;
     private final TokenServiceMetrics metrics;
     private final TokenTierResolver tierResolver;
-
-    public TokenController(TokenBucketService tokenBucketService,
-                           ProviderCallService providerCallService,
-                           TokenQuotaService quotaService,
-                           TokenServiceMetrics metrics,
-                           TokenTierResolver tierResolver) {
-        this.tokenBucketService = tokenBucketService;
-        this.providerCallService = providerCallService;
-        this.quotaService = quotaService;
-        this.metrics = metrics;
-        this.tierResolver = tierResolver;
-    }
 
     @GetMapping("/api/v1/tokens/status")
     @Operation(

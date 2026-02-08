@@ -12,18 +12,14 @@ import java.util.Set;
 
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRecord;
 import com.leaky.tokens.analyticsservice.storage.TokenUsageByProviderRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AnalyticsReportService {
     private final TokenUsageByProviderRepository byProviderRepository;
     private final AnalyticsReportProperties properties;
-
-    public AnalyticsReportService(TokenUsageByProviderRepository byProviderRepository,
-                                  AnalyticsReportProperties properties) {
-        this.byProviderRepository = byProviderRepository;
-        this.properties = properties;
-    }
 
     public AnalyticsReportResponse buildReport(String provider, Integer windowMinutes, Integer limit) {
         int window = clamp(windowMinutes, properties.getDefaultWindowMinutes(), properties.getMaxWindowMinutes());

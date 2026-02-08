@@ -45,8 +45,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             100,
             75,
             Instant.now().plus(Duration.ofHours(1)),
@@ -85,8 +85,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             500,
             500,
             Instant.now().plus(Duration.ofHours(1)),
@@ -119,8 +119,8 @@ class TokenQuotaServiceTest {
         Instant past = Instant.now().minus(Duration.ofHours(2));
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             1000,
             100,
             past,
@@ -220,8 +220,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             100,
             100,
             Instant.now().plus(Duration.ofHours(1)),
@@ -249,8 +249,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             100,
             100,
             Instant.now().plus(Duration.ofHours(1)),
@@ -278,8 +278,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             200,
             10,
             Instant.now().plus(Duration.ofHours(1)),
@@ -306,8 +306,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             100,
             90,
             null,
@@ -332,8 +332,8 @@ class TokenQuotaServiceTest {
         UUID userId = UUID.randomUUID();
         TokenPool pool = new TokenPool(
             UUID.randomUUID(),
-            userId,
             "openai",
+            userId,
             100,
             90,
             null,

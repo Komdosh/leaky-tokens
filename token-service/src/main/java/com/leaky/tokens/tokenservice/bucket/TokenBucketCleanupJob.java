@@ -3,22 +3,19 @@ package com.leaky.tokens.tokenservice.bucket;
 import java.time.Duration;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class TokenBucketCleanupJob {
     private static final Logger logger = LoggerFactory.getLogger(TokenBucketCleanupJob.class);
 
     private final TokenBucketStore store;
     private final TokenBucketProperties properties;
-
-    public TokenBucketCleanupJob(TokenBucketStore store, TokenBucketProperties properties) {
-        this.store = store;
-        this.properties = properties;
-    }
 
     @Scheduled(fixedDelayString = "${token.bucket.cleanup-interval:PT30M}")
     public void cleanup() {

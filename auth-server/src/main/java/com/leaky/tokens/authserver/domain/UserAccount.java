@@ -16,10 +16,15 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
+@Setter
 @Getter
 @Entity
 @Table(name = "users")
+@RequiredArgsConstructor
 public class UserAccount {
     @Id
     @Column(nullable = false, updatable = false)
@@ -48,9 +53,6 @@ public class UserAccount {
     )
     private Set<Role> roles = new HashSet<>();
 
-    public UserAccount() {
-    }
-
     public UserAccount(UUID id, String username, String email, String passwordHash) {
         this.id = id;
         this.username = username;
@@ -71,22 +73,6 @@ public class UserAccount {
     @PreUpdate
     void onUpdate() {
         updatedAt = Instant.now();
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
     }
 
     public void setRoles(Set<Role> roles) {

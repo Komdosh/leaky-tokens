@@ -77,7 +77,7 @@ public class TokenQuotaService {
         TokenPool pool = repository.findForUpdate(userId, provider).orElse(null);
         Instant now = Instant.now();
         if (pool == null) {
-            pool = new TokenPool(UUID.randomUUID(), userId, provider, tokens, tokens, nextResetTime(now), now, now);
+            pool = new TokenPool(UUID.randomUUID(), provider, userId, tokens, tokens, nextResetTime(now), now, now);
         } else {
             applyResetIfNeeded(pool, tier, now);
             pool.addTokens(tokens, now);

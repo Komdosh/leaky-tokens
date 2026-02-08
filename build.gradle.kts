@@ -62,6 +62,8 @@ subprojects {
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     }
 
+    val isPerformanceTests = name == "performance-tests"
+
     plugins.withId("org.springframework.boot") {
         extensions.configure<org.springframework.boot.gradle.dsl.SpringBootExtension> {
             val mainClassName = when (project.name) {
@@ -79,17 +81,12 @@ subprojects {
         }
     }
 
-//    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-//        kotlinOptions {
-//            freeCompilerArgs = listOf("-Xjsr305=strict")
-//            jvmTarget = "24"
-//        }
-//    }
-
     tasks.withType<Test> {
         useJUnitPlatform()
         jvmArgs("--enable-native-access=ALL-UNNAMED")
-        finalizedBy("jacocoTestReport")
+        if (!isPerformanceTests) {
+            finalizedBy("jacocoTestReport")
+        }
     }
 
     extensions.configure<JacocoPluginExtension> {
@@ -97,7 +94,15 @@ subprojects {
     }
 
     tasks.named<JacocoReport>("jacocoTestReport") {
+        enabled = !isPerformanceTests
         dependsOn(tasks.test)
+        classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude("com/leaky/tokens/perf/**")
+                }
+            })
+        )
         reports {
             xml.required.set(true)
             html.required.set(true)
@@ -105,7 +110,15 @@ subprojects {
     }
 
     tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+        enabled = !isPerformanceTests
         dependsOn(tasks.test)
+        classDirectories.setFrom(
+            files(classDirectories.files.map {
+                fileTree(it) {
+                    exclude("com/leaky/tokens/perf/**")
+                }
+            })
+        )
         violationRules {
             rule {
                 limit {

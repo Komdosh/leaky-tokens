@@ -2,20 +2,17 @@ package com.leaky.tokens.tokenservice.provider;
 
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.core.ParameterizedTypeReference;
 
 @Component
+@RequiredArgsConstructor
 public class WebClientProviderClient implements ProviderClient {
     private final WebClient.Builder webClientBuilder;
     private final ProviderRegistry registry;
-
-    public WebClientProviderClient(WebClient.Builder webClientBuilder, ProviderRegistry registry) {
-        this.webClientBuilder = webClientBuilder;
-        this.registry = registry;
-    }
 
     @Override
     public ProviderResponse call(String provider, ProviderRequest request) {

@@ -6,18 +6,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class TokenTierResolver {
     private final TokenTierProperties properties;
-
-    public TokenTierResolver(TokenTierProperties properties) {
-        this.properties = properties;
-    }
 
     public TokenTierProperties.TierConfig resolveTier() {
         return resolveTier(SecurityContextHolder.getContext().getAuthentication());

@@ -1,17 +1,15 @@
 package com.leaky.tokens.apigateway.security;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
+@RequiredArgsConstructor
 public class ApiKeyAuthenticationConverter implements ServerAuthenticationConverter {
     private final ApiKeyAuthProperties properties;
-
-    public ApiKeyAuthenticationConverter(ApiKeyAuthProperties properties) {
-        this.properties = properties;
-    }
 
     @Override
     public @NonNull Mono<org.springframework.security.core.Authentication> convert(ServerWebExchange exchange) {
