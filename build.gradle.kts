@@ -84,6 +84,11 @@ subprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
         jvmArgs("--enable-native-access=ALL-UNNAMED")
+        if (System.getProperty("skipITs") == "true") {
+            // CI is resource constrained; skip heavier integration-style tests.
+            exclude("**/*IT.class")
+            exclude("**/*IT")
+        }
         if (!isPerformanceTests) {
             finalizedBy("jacocoTestReport")
         }
