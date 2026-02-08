@@ -75,8 +75,8 @@ jobs:
           echo "## JaCoCo Summary" >> "$GITHUB_STEP_SUMMARY"
           find . -path "*/build/reports/jacoco/test/jacocoTestReport.xml" -print0 | while IFS= read -r -d '' file; do
             module=$(basename "$(dirname "$(dirname "$(dirname "$file")")")")
-            line=$(grep -m1 'counter type="LINE"' "$file" || true)
-            branch=$(grep -m1 'counter type="BRANCH"' "$file" || true)
+            line=$(grep 'counter type="LINE"' "$file" | tail -n1 || true)
+            branch=$(grep 'counter type="BRANCH"' "$file" | tail -n1 || true)
             line_missed=$(echo "$line" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
             line_covered=$(echo "$line" | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
             branch_missed=$(echo "$branch" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
@@ -85,13 +85,13 @@ jobs:
               line_total=$((line_missed + line_covered))
               line_pct=$(awk "BEGIN {printf \"%.2f\", ($line_covered/$line_total)*100}")
             else
-              line_pct="n/a"
+              line_pct="no data"
             fi
             if [ -n "$branch_missed" ] && [ -n "$branch_covered" ]; then
               branch_total=$((branch_missed + branch_covered))
               branch_pct=$(awk "BEGIN {printf \"%.2f\", ($branch_covered/$branch_total)*100}")
             else
-              branch_pct="n/a"
+              branch_pct="no data"
             fi
             echo "- ${module}: line ${line_pct}% | branch ${branch_pct}%" >> "$GITHUB_STEP_SUMMARY"
           done
