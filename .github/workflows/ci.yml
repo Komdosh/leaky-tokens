@@ -76,8 +76,8 @@ jobs:
             module_path="${file%/build/reports/jacoco/test/jacocoTestReport.xml}"
             module_path="${module_path#./}"
             module="${module_path##*/}"
-            line=$(grep 'type="LINE"' "$file" | tail -n1 || true)
-            branch=$(grep 'type="BRANCH"' "$file" | tail -n1 || true)
+            line=$(grep 'type=\"LINE\"' "$file" | tail -n1 || true)
+            branch=$(grep 'type=\"BRANCH\"' "$file" | tail -n1 || true)
             line_missed=$(echo "$line" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
             line_covered=$(echo "$line" | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
             branch_missed=$(echo "$branch" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
