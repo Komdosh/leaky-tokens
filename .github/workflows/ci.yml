@@ -7,6 +7,15 @@ on:
     branches: ["**"]
 
 jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -27,4 +36,69 @@ jobs:
           echo "Only unit tests are executed; heavy or integration tests are skipped."
 
       - name: Build and unit tests
-        run: ./gradlew test -DskipITs=true
+        run: ./gradlew test jacocoTestReport -DskipITs=true
+
+      - name: Test report summary
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: "**/build/test-results/test/*.xml"
+          summary: true
+          detailed_summary: true
+          require_tests: false
+
+      - name: JaCoCo summary
+        if: always()
+        run: |
+          echo "## JaCoCo Summary" >> "$GITHUB_STEP_SUMMARY"
+          find . -path "*/build/reports/jacoco/test/jacocoTestReport.xml" -print0 | while IFS= read -r -d '' file; do
+            module=$(basename "$(dirname "$(dirname "$(dirname "$file")")")")
+            line=$(grep -m1 'counter type="LINE"' "$file" || true)
+            branch=$(grep -m1 'counter type="BRANCH"' "$file" || true)
+            line_missed=$(echo "$line" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
+            line_covered=$(echo "$line" | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
+            branch_missed=$(echo "$branch" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
+            branch_covered=$(echo "$branch" | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
+            if [ -n "$line_missed" ] && [ -n "$line_covered" ]; then
+              line_total=$((line_missed + line_covered))
+              line_pct=$(awk "BEGIN {printf \"%.2f\", ($line_covered/$line_total)*100}")
+            else
+              line_pct="n/a"
+            fi
+            if [ -n "$branch_missed" ] && [ -n "$branch_covered" ]; then
+              branch_total=$((branch_missed + branch_covered))
+              branch_pct=$(awk "BEGIN {printf \"%.2f\", ($branch_covered/$branch_total)*100}")
+            else
+              branch_pct="n/a"
+            fi
+            echo "- ${module}: line ${line_pct}% | branch ${branch_pct}%" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload JaCoCo reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports
+          path: |
+            **/build/reports/jacoco/test
+            **/build/reports/jacoco/test/html
+          if-no-files-found: warn
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/test
+            **/build/test-results/test
+          if-no-files-found: warn
+
+      - name: Upload Gradle problems report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-problems
+          path: |
+            **/build/reports/problems
+          if-no-files-found: warn
