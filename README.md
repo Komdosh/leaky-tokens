@@ -7,6 +7,7 @@
 [![Gradle](https://img.shields.io/badge/Gradle-Kotlin%20DSL-02303A?style=for-the-badge&logo=gradle)](https://gradle.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![CI](https://github.com/Komdosh/leaky-tokens/actions/workflows/ci.yml/badge.svg)](https://github.com/Komdosh/leaky-tokens/actions/workflows/ci.yml)
+![Coverage](https://raw.githubusercontent.com/Komdosh/leaky-tokens/main/badges/jacoco.svg)
 
 **Enterprise-Grade Token Management & Rate Limiting System**
 
