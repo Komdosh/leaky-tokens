@@ -24,10 +24,6 @@
 
 ---
 
-## CI
-
-CI is intentionally lightweight because GitHub runners are resource constrained. It runs unit tests only and skips heavy/integration tests.
-
 ## WHY?
 
 This is an auto-generated project by AI agents. I already have experience with all of these technologies, but nobody
