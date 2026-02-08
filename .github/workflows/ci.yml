@@ -133,8 +133,8 @@ jobs:
           total_covered=0
           while IFS= read -r -d '' file; do
             line=$(grep -m1 'counter type="LINE"' "$file" || true)
-            missed=$(echo "$line" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
-            covered=$(echo "$line" | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
+            missed=$(echo "$line" | sed -n 's/.*missed="\([0-9]*\)".*/\1/p')
+            covered=$(echo "$line" | sed -n 's/.*covered="\([0-9]*\)".*/\1/p')
             if [ -n "$missed" ] && [ -n "$covered" ]; then
               total_missed=$((total_missed + missed))
               total_covered=$((total_covered + covered))
