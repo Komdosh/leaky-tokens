@@ -103,8 +103,8 @@ jobs:
         with:
           name: gradle-problems
           path: |
-            **/build/reports/problems
-          if-no-files-found: warn
+            **/build/reports/problems/**
+          if-no-files-found: ignore
 
       - name: Generate coverage badge
         if: github.event_name == 'push'
