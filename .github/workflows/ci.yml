@@ -73,9 +73,11 @@ jobs:
         run: |
           echo "## JaCoCo Summary" >> "$GITHUB_STEP_SUMMARY"
           find . -path "*/build/reports/jacoco/test/jacocoTestReport.xml" -print0 | while IFS= read -r -d '' file; do
-            module=$(basename "$(dirname "$(dirname "$(dirname "$file")")")")
-            line=$(grep 'counter type="LINE"' "$file" | tail -n1 || true)
-            branch=$(grep 'counter type="BRANCH"' "$file" | tail -n1 || true)
+            module_path="${file%/build/reports/jacoco/test/jacocoTestReport.xml}"
+            module_path="${module_path#./}"
+            module="${module_path##*/}"
+            line=$(grep 'type="LINE"' "$file" | tail -n1 || true)
+            branch=$(grep 'type="BRANCH"' "$file" | tail -n1 || true)
             line_missed=$(echo "$line" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
             line_covered=$(echo "$line" | sed -n 's/.*covered="\\([0-9]*\\)".*/\\1/p')
             branch_missed=$(echo "$branch" | sed -n 's/.*missed="\\([0-9]*\\)".*/\\1/p')
