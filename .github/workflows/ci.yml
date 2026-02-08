@@ -151,7 +151,7 @@ jobs:
               <text x="85" y="14">${pct}%</text>
             </g>
           </svg>
-SVG
+          SVG
 
       - name: Commit coverage badge
         if: github.event_name == 'push'
