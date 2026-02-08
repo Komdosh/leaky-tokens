@@ -41,6 +41,17 @@ jobs:
       - name: Build and unit tests
         run: ./gradlew test jacocoTestReport -DskipITs=true
 
+      - name: Ensure Gradle problems report artifact
+        if: always()
+        run: |
+          if ! find . -path "*/build/reports/problems/problems-report.html" -print -quit | grep -q .; then
+            mkdir -p build/reports/problems
+            cat > build/reports/problems/README.txt <<EOF
+            No Gradle problems report was generated in this run.
+            This can happen when Gradle has nothing to report.
+            EOF
+          fi
+
       - name: Test report summary
         if: always()
         uses: mikepenz/action-junit-report@v4
@@ -104,7 +115,7 @@ jobs:
           name: gradle-problems
           path: |
             **/build/reports/problems/**
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
       - name: Generate coverage badge
         if: github.event_name == 'push'
