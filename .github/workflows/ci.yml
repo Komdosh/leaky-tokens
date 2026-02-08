@@ -56,7 +56,7 @@ jobs:
             cp -R "$dir"/. "$dest"/
           done < <(find . -type d -path "*/build/reports/problems" -print0)
           if [ "$found" -eq 0 ]; then
-            cat > build/ci/gradle-problems/README.txt <<EOF
+            cat > build/ci/gradle-problems/README.txt <<'EOF'
             No Gradle problems report was generated in this run.
             This can happen when Gradle has nothing to report.
             EOF
