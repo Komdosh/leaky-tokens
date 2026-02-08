@@ -41,12 +41,20 @@ jobs:
       - name: Build and unit tests
         run: ./gradlew test jacocoTestReport -DskipITs=true
 
-      - name: Ensure Gradle problems report artifact
+      - name: Aggregate Gradle problems report
         if: always()
         run: |
-          if ! find . -path "*/build/reports/problems/problems-report.html" -print -quit | grep -q .; then
-            mkdir -p build/reports/problems
-            cat > build/reports/problems/README.txt <<EOF
+          mkdir -p build/ci/gradle-problems
+          found=0
+          while IFS= read -r -d '' dir; do
+            found=1
+            module=$(echo "$dir" | sed -E 's|^\./||; s|/build/reports/problems$||; s|/|_|g')
+            dest="build/ci/gradle-problems/${module}"
+            mkdir -p "$dest"
+            cp -R "$dir"/. "$dest"/
+          done < <(find . -type d -path "*/build/reports/problems" -print0)
+          if [ "$found" -eq 0 ]; then
+            cat > build/ci/gradle-problems/README.txt <<EOF
             No Gradle problems report was generated in this run.
             This can happen when Gradle has nothing to report.
             EOF
@@ -114,7 +122,7 @@ jobs:
         with:
           name: gradle-problems
           path: |
-            **/build/reports/problems/**
+            build/ci/gradle-problems
           if-no-files-found: warn
 
       - name: Generate coverage badge
